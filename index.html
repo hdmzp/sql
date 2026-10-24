@@ -1,0 +1,2119 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MySQL 쿼리 학습 노트</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDF0F4; --surface:#FFFFFF; --ink:#18202B; --muted:#5B6676; --line:#D3D9E1;
+  --accent:#2148C0; --accent-ink:#FFFFFF; --accent-soft:#E3E9FA;
+  --warn:#A8530A; --warn-soft:#FBF0E2; --bad:#B42318; --bad-soft:#FDECEA; --good:#1E7A4C;
+  --code-bg:#172030; --code-ink:#E3E8F0; --c-kw:#8FB4FF; --c-str:#F2C27B; --c-fn:#9FE0C7; --c-num:#F4A3A3; --c-cm:#7D8A9C;
+  --strike:#B5BDC8; --strike-bg:#F5F6F8;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#12171F; --surface:#1A212C; --ink:#E6EAF0; --muted:#9AA5B5; --line:#2C3644;
+    --accent:#7EA2FF; --accent-ink:#0D1219; --accent-soft:#1F2B47;
+    --warn:#F0B45A; --warn-soft:#2E2618; --bad:#FF8A80; --bad-soft:#3A1F1F; --good:#6FD3A0;
+    --code-bg:#0D1219; --strike:#56606F; --strike-bg:#161C25;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#12171F; --surface:#1A212C; --ink:#E6EAF0; --muted:#9AA5B5; --line:#2C3644;
+  --accent:#7EA2FF; --accent-ink:#0D1219; --accent-soft:#1F2B47;
+  --warn:#F0B45A; --warn-soft:#2E2618; --bad:#FF8A80; --bad-soft:#3A1F1F; --good:#6FD3A0;
+  --code-bg:#0D1219; --strike:#56606F; --strike-bg:#161C25;
+  color-scheme: dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:24px;scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+  font-size:16px;line-height:1.75;word-break:keep-all;overflow-wrap:break-word}
+code,pre,textarea,.mono{font-family:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace}
+code,pre,textarea,.mono,.sq,.rt td{font-variant-ligatures:none;font-feature-settings:"calt" 0,"liga" 0}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button{font:inherit}
+
+/* ---------- 레이아웃 ---------- */
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;max-width:1180px;margin:0 auto;padding:32px 24px 120px}
+nav.toc{position:sticky;top:24px;align-self:start;max-height:calc(100vh - 48px);overflow:auto;font-size:14px;padding-right:4px}
+.toc h1{font-size:17px;line-height:1.4;margin:0 0 4px;font-weight:700}
+.toc .sub{color:var(--muted);font-size:13px;margin:0 0 18px}
+.toc ol{list-style:none;margin:0;padding:0}
+.toc li a{display:flex;gap:10px;align-items:baseline;padding:5px 10px;border-radius:6px;color:var(--muted);text-decoration:none;line-height:1.45}
+.toc li a .n{font-family:"JetBrains Mono",monospace;font-size:12px;min-width:20px}
+.toc li a .c{margin-left:auto;font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--muted);opacity:.8}
+.toc li a .c.full{color:var(--good);opacity:1}
+.toc li a:hover{color:var(--ink);background:var(--surface)}
+.toc li a.active{color:var(--accent);background:var(--accent-soft);font-weight:600}
+.progress{margin:18px 0 0;padding:14px;border:1px solid var(--line);border-radius:8px;background:var(--surface);font-size:13px}
+.progress .bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:8px}
+.progress .bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
+.toc-tools{display:flex;gap:8px;margin-top:12px}
+.toc-tools button{flex:1;font-size:13px;padding:7px 8px;border:1px solid var(--line);border-radius:6px;background:transparent;color:var(--muted);cursor:pointer}
+.toc-tools button:hover{color:var(--ink);background:var(--surface)}
+
+.topbar{display:none}
+.scrim{display:none}
+
+main{min-width:0;max-width:800px}
+section.ch{padding-top:56px;margin-top:56px;border-top:1px solid var(--line)}
+section.ch:first-of-type{border-top:0;margin-top:0;padding-top:0}
+.ch-head{display:flex;align-items:baseline;gap:14px;margin-bottom:8px}
+.ch-head .num{font-family:"JetBrains Mono",monospace;font-size:15px;color:var(--accent);font-weight:600}
+h2{font-size:28px;line-height:1.3;margin:0;font-weight:700;letter-spacing:-.01em}
+.lede{color:var(--muted);margin:0 0 24px;font-size:17px}
+h3{font-size:20px;margin:40px 0 10px;font-weight:600}
+h4{font-size:16px;margin:24px 0 6px;font-weight:600}
+p{margin:0 0 14px}
+ul.plain,ol.plain{margin:0 0 14px;padding-left:22px}
+ul.plain li,ol.plain li{margin:4px 0}
+code.i{font-size:.86em;background:var(--accent-soft);color:var(--ink);padding:1px 6px;border-radius:4px;white-space:nowrap}
+.muted{color:var(--muted)}
+hr.soft{border:0;border-top:1px dashed var(--line);margin:28px 0}
+
+/* ---------- 코드 ---------- */
+.code{position:relative}
+pre{margin:12px 0 10px;background:var(--code-bg);color:var(--code-ink);padding:14px 18px;border-radius:8px;overflow-x:auto;font-size:13.5px;line-height:1.65;tab-size:2}
+pre code{white-space:pre}
+.kw{color:var(--c-kw);font-weight:600}.st{color:var(--c-str)}.fn{color:var(--c-fn)}.nu{color:var(--c-num)}.cm{color:var(--c-cm);font-style:italic}
+.copy{position:absolute;top:8px;right:8px;font-size:12px;padding:3px 9px;border-radius:5px;border:1px solid #3A4659;background:#1F2939;color:#C9D2DF;cursor:pointer;opacity:0;transition:opacity .15s}
+.code:hover .copy,.copy:focus-visible{opacity:1}
+@media (hover:none){.copy{opacity:.85}}
+
+/* ---------- 결과 테이블 ---------- */
+.rt{margin:0 0 20px;overflow-x:auto}
+.rt table{border-collapse:collapse;font-size:13px;background:var(--surface);border:1px solid var(--line)}
+.rt caption{text-align:left;font-size:12px;color:var(--muted);padding:0 0 3px;white-space:nowrap}
+.rt caption span{opacity:.8}
+.rt th,.rt td{padding:3px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;line-height:1.55}
+.rt th{font-weight:600;background:var(--bg);font-size:12.5px}
+.rt td{font-family:"JetBrains Mono",monospace;font-size:12.5px}
+.rt td.n{text-align:right}
+.rt td.null{color:var(--muted);font-style:italic}
+.rt td.empty{color:var(--muted);font-family:inherit;font-style:italic}
+.rt tr.x td{color:var(--strike);text-decoration:line-through;background:var(--strike-bg)}
+.rt tr.x td.null{text-decoration:line-through}
+.pair{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}
+.pair>.rt{margin-bottom:12px}
+
+.err{margin:0 0 20px;padding:8px 12px;border-radius:6px;background:var(--bad-soft);color:var(--bad);font-family:"JetBrains Mono",monospace;font-size:12.5px;line-height:1.55;border:1px solid color-mix(in srgb,var(--bad) 30%,transparent)}
+.err b{margin-right:6px}
+.err{overflow-wrap:anywhere}
+
+/* ---------- 박스 ---------- */
+.trap,.tip{padding:14px 18px 14px 18px;border-radius:8px;margin:18px 0 22px}
+.trap{background:var(--warn-soft);border:1px solid color-mix(in srgb,var(--warn) 35%,transparent);border-left:5px solid var(--warn)}
+.trap>.t{display:flex;gap:8px;align-items:center;color:var(--warn);font-weight:700;margin-bottom:6px}
+.trap>.t::before{content:"!";display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--warn);color:var(--warn-soft);font-size:13px;font-weight:700;flex:none}
+.tip{background:var(--accent-soft);border-left:5px solid var(--accent)}
+.tip>.t{color:var(--accent);font-weight:700;margin-bottom:6px}
+.trap p:last-child,.tip p:last-child,.trap ul:last-child,.tip ul:last-child{margin-bottom:0}
+.trap .rt,.trap .err{margin-bottom:12px}
+.trap pre{margin-top:8px}
+
+/* ---------- 실행 순서 스테퍼 ---------- */
+.hero h2{font-size:34px;line-height:1.25;margin-bottom:10px}
+.stepper{margin-top:20px;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.chips{display:flex;flex-wrap:wrap;gap:6px;padding:14px 18px;border-bottom:1px solid var(--line);margin:0;list-style:none}
+.chips button{font-size:12.5px;padding:3px 10px;border:1px solid var(--line);border-radius:20px;background:var(--bg);color:var(--muted);cursor:pointer;font-family:"JetBrains Mono",monospace}
+.chips button.done{color:var(--ink)}
+.chips button.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.sq{background:var(--code-bg);color:var(--code-ink);padding:14px 0;font-family:"JetBrains Mono",monospace;font-size:13.5px;line-height:1.95;overflow-x:auto}
+.sq .ln{display:flex;align-items:center;gap:14px;padding:0 18px;white-space:pre;transition:background .2s,opacity .2s;min-width:max-content}
+.sq .ln .ord{flex:none;min-width:24px;height:22px;padding:0 5px;border-radius:11px;border:1px solid #3A4659;color:#9AA5B5;font-size:11px;display:grid;place-items:center}
+.sq .ln.done{opacity:.5}
+.sq .ln.later{opacity:.3}
+.sq .ln.on{background:rgba(126,162,255,.16);opacity:1}
+.sq .ln.on .ord{background:#7EA2FF;border-color:#7EA2FF;color:#0D1219;font-weight:600}
+.sq .seg.mark{box-shadow:inset 0 -2px 0 #F2C27B;background:rgba(242,194,123,.12);border-radius:2px}
+.sbody{padding:18px 20px 6px}
+.sbody h4{margin:0 0 4px;font-size:17px}
+.sbody .desc{margin:0 0 12px}
+.sbody .rt{margin-bottom:14px}
+.sctl{display:flex;gap:8px;align-items:center;padding:12px 20px;border-top:1px solid var(--line)}
+.btn{font-size:14px;padding:7px 14px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn:disabled{opacity:.4;cursor:default}
+.sctl .pos{margin-left:auto;color:var(--muted);font-size:13px;font-family:"JetBrains Mono",monospace}
+
+.order-line{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 0;padding:0;list-style:none;counter-reset:o}
+.order-line li{counter-increment:o;font-size:13.5px;padding:3px 11px 3px 8px;border:1px solid var(--line);border-radius:20px;background:var(--surface)}
+.order-line li::before{content:counter(o);font-family:"JetBrains Mono",monospace;color:var(--accent);font-weight:600;margin-right:6px;font-size:12px}
+.rules{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin:16px 0}
+.rule,.pair>*{min-width:0;max-width:100%}
+.rule{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.rule h4{margin:0 0 4px;font-size:15.5px}
+.rule p{margin:0 0 8px;color:var(--muted);font-size:15px}
+.rule pre{margin:8px 0}
+.rule .rt,.rule .err{margin-bottom:6px}
+
+/* ---------- 데이터/사고 순서 ---------- */
+.data-grid .rt{margin-bottom:18px}
+.think{counter-reset:t;list-style:none;padding:0;margin:0 0 16px}
+.think li{counter-increment:t;position:relative;padding:9px 0 9px 40px;border-bottom:1px solid var(--line)}
+.think li::before{content:counter(t);position:absolute;left:0;top:10px;width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-size:13px;font-weight:600}
+.think li .ex{display:block;color:var(--muted);font-size:14.5px}
+details.setup{margin:14px 0 22px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 14px}
+details.setup summary{cursor:pointer;font-weight:600;font-size:15px}
+details.setup pre{max-height:360px}
+
+/* ---------- 연습문제 ---------- */
+.prac-head{display:flex;align-items:baseline;gap:10px;margin:40px 0 4px}
+.prac-head h3{margin:0}
+.prac-head .cnt{font-size:13px;color:var(--muted);font-family:"JetBrains Mono",monospace}
+.prac{margin:14px 0;padding:16px 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface);transition:border-color .2s}
+.prac .q{margin:0 0 10px;display:flex;gap:10px}
+.prac .q .no{flex:none;font-family:"JetBrains Mono",monospace;font-weight:600;color:var(--accent);font-size:14px;padding-top:2px}
+.prac textarea{display:block;width:100%;min-height:104px;resize:vertical;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font-size:13.5px;line-height:1.6;tab-size:2}
+.prac textarea:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
+.prac-actions{display:flex;gap:12px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.prac-actions label{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--muted);cursor:pointer;user-select:none}
+.prac-actions label input{width:16px;height:16px;accent-color:var(--good)}
+.prac-actions .saved{margin-left:auto;font-size:12px;color:var(--muted)}
+.prac.isdone{border-color:color-mix(in srgb,var(--good) 55%,var(--line))}
+.prac.isdone .q .no{color:var(--good)}
+.prac .answer{display:none;margin-top:14px;padding-top:12px;border-top:1px dashed var(--line)}
+.prac.open .answer{display:block}
+.answer .lbl{font-size:12.5px;font-weight:600;color:var(--muted);letter-spacing:.02em}
+.answer pre{margin-top:4px}
+.answer p{font-size:15px}
+
+/* ---------- 치트시트 ---------- */
+.sheet{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.sheet .cell{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px;min-width:0}
+.sheet .cell h4{margin:0 0 4px;font-size:14.5px}
+.sheet pre{font-size:12px;margin:4px 0 0;padding:10px 12px;line-height:1.55}
+.checklist{list-style:none;padding:0;margin:0}
+.checklist li{display:flex;gap:8px;padding:5px 0;border-bottom:1px solid var(--line);font-size:14.5px}
+.checklist li:last-child{border-bottom:0}
+.checklist input{margin-top:6px;accent-color:var(--good)}
+.sheet .cell.wide{grid-column:1/-1}
+
+/* ---------- 모바일 ---------- */
+@media (max-width: 960px){
+  .layout{display:block;padding:72px 16px 96px}
+  .topbar{display:flex;position:fixed;top:0;left:0;right:0;z-index:30;height:52px;align-items:center;gap:10px;padding:0 12px 0 8px;
+    background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  .topbar button{border:0;background:transparent;color:var(--ink);padding:8px;border-radius:6px;cursor:pointer;display:grid;place-items:center}
+  .topbar .where{flex:1;min-width:0;font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .topbar .mini{font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--muted)}
+  .topbar .mbar{position:absolute;left:0;bottom:-1px;height:2px;background:var(--accent);width:0;transition:width .3s}
+  nav.toc{position:fixed;z-index:40;top:0;bottom:0;left:0;width:min(300px,86vw);max-height:none;background:var(--bg);padding:20px 16px;
+    transform:translateX(-102%);transition:transform .25s;border-right:1px solid var(--line)}
+  body.nav-open nav.toc{transform:none}
+  body.nav-open .scrim{display:block;position:fixed;inset:0;z-index:35;background:rgba(0,0,0,.35)}
+  html{scroll-padding-top:68px}
+  .hero h2{font-size:26px}
+  h2{font-size:23px}
+  h3{font-size:18px}
+  pre{font-size:12.5px;padding:12px 14px}
+  .prac{padding:14px}
+  code.i{white-space:normal;overflow-wrap:anywhere}
+}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <button type="button" id="menuBtn" aria-label="목차 열기"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+  <span class="where" id="whereNow">실행 순서</span>
+  <span class="mini" id="miniCount"></span>
+  <i class="mbar" id="miniBar"></i>
+</div>
+<div class="scrim" id="scrim"></div>
+<div class="layout">
+<nav class="toc" aria-label="목차">
+  <h1>MySQL 쿼리 학습 노트</h1>
+  <p class="sub">MySQL 8.0 기준 · 개념 → 예시 → 직접 써보기</p>
+  <ol id="tocList">
+    <li><a href="#order"><span class="n">▶</span>실행 순서</a></li>
+    <li><a href="#ch0"><span class="n">00</span>샘플 데이터와 사고 순서</a></li>
+    <li><a href="#ch1"><span class="n">01</span>SELECT 기초</a></li>
+    <li><a href="#ch2"><span class="n">02</span>WHERE 조건</a></li>
+    <li><a href="#ch3"><span class="n">03</span>NULL 다루기</a></li>
+    <li><a href="#ch4"><span class="n">04</span>CASE WHEN과 IF</a></li>
+    <li><a href="#ch5"><span class="n">05</span>날짜·문자·숫자 함수</a></li>
+    <li><a href="#ch6"><span class="n">06</span>그룹함수와 GROUP BY</a></li>
+    <li><a href="#ch7"><span class="n">07</span>JOIN</a></li>
+    <li><a href="#ch8"><span class="n">08</span>서브쿼리</a></li>
+    <li><a href="#ch9"><span class="n">09</span>WITH절 (CTE)</a></li>
+    <li><a href="#ch10"><span class="n">10</span>윈도우 함수</a></li>
+    <li><a href="#ch11"><span class="n">11</span>UNION</a></li>
+    <li><a href="#ch12"><span class="n">12</span>실전 패턴</a></li>
+    <li><a href="#sheet"><span class="n">✓</span>요약 치트시트</a></li>
+  </ol>
+  <div class="progress">
+    <div>연습문제 <b id="doneCount">0</b> / <span id="totalCount">0</span> 풀었음</div>
+    <div class="bar"><i id="doneBar"></i></div>
+  </div>
+  <div class="toc-tools">
+    <button type="button" id="themeBtn">다크 모드</button>
+    <button type="button" id="resetBtn">기록 초기화</button>
+  </div>
+</nav>
+
+<main>
+
+<!-- ================= 실행 순서 ================= -->
+<section class="ch hero" id="order">
+  <h2>쿼리는 쓴 순서대로 실행되지 않는다</h2>
+  <p class="lede">세부 문법보다 이것부터 잡으면 “왜 여기서 별칭을 못 쓰지?” 같은 에러의 절반이 사라집니다. 아래 쿼리는 일부러 모든 절을 넣었어요. <b>다음 단계</b>를 누르면 그 단계가 끝난 직후의 중간 결과가 보입니다. 지워지는 행은 취소선으로 표시돼요.</p>
+
+  <div class="stepper" id="stepper">
+    <ol class="chips" id="sChips"></ol>
+    <div class="sq" id="sq" aria-label="예시 쿼리"></div>
+    <div class="sbody" aria-live="polite">
+      <h4 id="sTitle"></h4>
+      <p class="desc" id="sDesc"></p>
+      <div class="rt" id="sTable"></div>
+    </div>
+    <div class="sctl">
+      <button type="button" class="btn" id="sPrev">이전</button>
+      <button type="button" class="btn primary" id="sNext">다음 단계</button>
+      <span class="pos" id="sPos"></span>
+    </div>
+  </div>
+
+  <h3>전체 실행 순서</h3>
+  <ol class="order-line">
+    <li>FROM · JOIN</li><li>WHERE</li><li>GROUP BY</li><li>HAVING</li><li>SELECT (윈도우 함수 포함)</li><li>DISTINCT</li><li>ORDER BY</li><li>LIMIT</li>
+  </ol>
+  <p style="margin-top:14px">외우는 요령: <b>“어디서(FROM) 무엇을 거르고(WHERE) 묶어서(GROUP BY) 또 거른 뒤(HAVING) 보여주고(SELECT) 정렬해서(ORDER BY) 자른다(LIMIT)”</b>. 아래 규칙은 전부 이 순서에서 나옵니다. 에러 메시지도 MySQL 8.0에서 그대로 실행해 가져온 것이에요.</p>
+
+  <div class="rules">
+    <div class="rule">
+      <h4>① WHERE에서는 SELECT 별칭을 쓸 수 없다</h4>
+      <p>WHERE(2단계)가 실행될 때 SELECT(5단계)는 아직 실행 전이라 별칭이 존재하지 않습니다.</p>
+<pre><code class="sql">SELECT order_id, amount * 0.9 AS sale_amount
+FROM orders
+WHERE sale_amount &gt;= 100000;</code></pre><div class="err"><b>ERROR 1054</b> Unknown column &#x27;sale_amount&#x27; in &#x27;where clause&#x27;</div>
+      <p>식을 그대로 다시 쓰거나, 서브쿼리/WITH로 한 번 감싸서 바깥에서 별칭으로 거릅니다.</p>
+    </div>
+    <div class="rule">
+      <h4>② WHERE에서는 집계함수를 쓸 수 없다 → HAVING</h4>
+      <p>WHERE는 그룹이 만들어지기 전(3단계 이전)이라 SUM, COUNT 같은 집계 결과가 없습니다.</p>
+<pre><code class="sql">SELECT customer_id, SUM(amount) AS total
+FROM orders
+WHERE SUM(amount) &gt;= 200000
+GROUP BY customer_id;</code></pre><div class="err"><b>ERROR 1111</b> Invalid use of group function</div>
+<pre><code class="sql">SELECT customer_id, SUM(amount) AS total
+FROM orders
+GROUP BY customer_id
+HAVING SUM(amount) &gt;= 200000
+ORDER BY total DESC;</code></pre><div class="rt"><table><caption>HAVING으로 고치면 <span>(3행)</span></caption><thead><tr><th>customer_id</th><th>total</th></tr></thead><tbody><tr><td class="n">1</td><td class="n">459000</td></tr><tr><td class="n">5</td><td class="n">320000</td></tr><tr><td class="n">3</td><td class="n">264000</td></tr></tbody></table></div>
+    </div>
+    <div class="rule">
+      <h4>③ ORDER BY는 별칭을 쓸 수 있다</h4>
+      <p>ORDER BY는 SELECT 뒤(7단계)라서 별칭이 이미 만들어져 있습니다. 위 쿼리의 <code class="i">ORDER BY total DESC</code>가 그 예. (MySQL은 편의상 GROUP BY·HAVING에서도 별칭을 허용하지만, WHERE만은 절대 안 됩니다.)</p>
+    </div>
+    <div class="rule">
+      <h4>④ 윈도우 함수는 감싸서 바깥에서 거른다</h4>
+      <p>윈도우 함수는 SELECT 단계에서 계산되므로 WHERE·HAVING에 직접 쓸 수 없습니다.</p>
+<pre><code class="sql">SELECT order_id, amount,
+       ROW_NUMBER() OVER (ORDER BY amount DESC, order_id) AS rn
+FROM orders
+WHERE rn &lt;= 3;</code></pre><div class="err"><b>ERROR 1054</b> Unknown column &#x27;rn&#x27; in &#x27;where clause&#x27;</div>
+<pre><code class="sql">WITH ranked AS (
+  SELECT order_id, amount,
+         ROW_NUMBER() OVER (ORDER BY amount DESC, order_id) AS rn
+  FROM orders
+)
+SELECT order_id, amount, rn
+FROM ranked
+WHERE rn &lt;= 3;</code></pre><div class="rt"><table><caption>WITH로 감싸서 바깥에서 거르면 <span>(3행)</span></caption><thead><tr><th>order_id</th><th>amount</th><th>rn</th></tr></thead><tbody><tr><td class="n">1</td><td class="n">320000</td><td class="n">1</td></tr><tr><td class="n">9</td><td class="n">320000</td><td class="n">2</td></tr><tr><td class="n">8</td><td class="n">189000</td><td class="n">3</td></tr></tbody></table></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 00 ================= -->
+<section class="ch" id="ch0">
+  <div class="ch-head"><span class="num">00</span><h2>샘플 데이터와 사고 순서</h2></div>
+  <p class="lede">사이트의 모든 예시와 연습문제는 아래 세 테이블만 씁니다. 행이 적으니 결과를 머릿속으로 먼저 예상해 본 다음 결과 테이블과 맞춰 보세요. 그게 실력이 가장 빨리 붙는 방법이에요.</p>
+
+  <div class="data-grid">
+<pre><code class="sql">SELECT * FROM customers;</code></pre><div class="rt"><table><caption>customers — 고객 5명 <span>(5행)</span></caption><thead><tr><th>customer_id</th><th>name</th><th>grade</th><th>city</th><th>join_date</th></tr></thead><tbody><tr><td class="n">1</td><td>김하늘</td><td>VIP</td><td>서울</td><td>2024-01-15</td></tr><tr><td class="n">2</td><td>이도윤</td><td>GOLD</td><td>부산</td><td>2024-03-02</td></tr><tr><td class="n">3</td><td>박서연</td><td>VIP</td><td>서울</td><td>2024-05-20</td></tr><tr><td class="n">4</td><td>최준호</td><td class="null">NULL</td><td>대전</td><td>2025-02-11</td></tr><tr><td class="n">5</td><td>정예린</td><td>GOLD</td><td>서울</td><td>2025-06-30</td></tr></tbody></table></div>
+<pre><code class="sql">SELECT * FROM products;</code></pre><div class="rt"><table><caption>products — 상품 6개 <span>(6행)</span></caption><thead><tr><th>product_id</th><th>product_name</th><th>category</th><th>price</th></tr></thead><tbody><tr><td class="n">101</td><td>무선청소기</td><td>가전</td><td class="n">320000</td></tr><tr><td class="n">102</td><td>에어프라이어</td><td>가전</td><td class="n">129000</td></tr><tr><td class="n">103</td><td>수분크림</td><td>뷰티</td><td class="n">38000</td></tr><tr><td class="n">104</td><td>선크림</td><td>뷰티</td><td class="n">25000</td></tr><tr><td class="n">105</td><td>패딩점퍼</td><td>패션</td><td class="n">189000</td></tr><tr><td class="n">106</td><td>요가매트</td><td>생활</td><td class="n">45000</td></tr></tbody></table></div>
+<pre><code class="sql">SELECT * FROM orders;</code></pre><div class="rt"><table><caption>orders — 주문 10건 (order_date는 DATE 타입, amount = price × qty) <span>(10행)</span></caption><thead><tr><th>order_id</th><th>customer_id</th><th>product_id</th><th>order_date</th><th>qty</th><th>amount</th></tr></thead><tbody><tr><td class="n">1</td><td class="n">1</td><td class="n">101</td><td>2026-08-14</td><td class="n">1</td><td class="n">320000</td></tr><tr><td class="n">2</td><td class="n">3</td><td class="n">104</td><td>2026-08-20</td><td class="n">3</td><td class="n">75000</td></tr><tr><td class="n">3</td><td class="n">1</td><td class="n">103</td><td>2026-09-01</td><td class="n">2</td><td class="n">76000</td></tr><tr><td class="n">4</td><td class="n">1</td><td class="n">104</td><td>2026-09-02</td><td class="n">1</td><td class="n">25000</td></tr><tr><td class="n">5</td><td class="n">1</td><td class="n">103</td><td>2026-09-03</td><td class="n">1</td><td class="n">38000</td></tr><tr><td class="n">6</td><td class="n">2</td><td class="n">102</td><td>2026-09-03</td><td class="n">1</td><td class="n">129000</td></tr><tr><td class="n">7</td><td class="null">NULL</td><td class="n">104</td><td>2026-09-10</td><td class="n">2</td><td class="n">50000</td></tr><tr><td class="n">8</td><td class="n">3</td><td class="n">105</td><td>2026-09-21</td><td class="n">1</td><td class="n">189000</td></tr><tr><td class="n">9</td><td class="n">5</td><td class="n">101</td><td>2026-10-05</td><td class="n">1</td><td class="n">320000</td></tr><tr><td class="n">10</td><td class="n">2</td><td class="n">103</td><td>2026-10-05</td><td class="n">1</td><td class="n">38000</td></tr></tbody></table></div>
+  </div>
+
+  <div class="trap"><div class="t">일부러 넣어 둔 함정 (실제 데이터에도 흔함)</div>
+    <ul class="plain">
+      <li><b>NULL 값</b>: 최준호(4번)는 등급(grade)이 NULL. 주문 7번은 비회원 주문이라 customer_id가 NULL.</li>
+      <li><b>주문 없는 고객</b>: 최준호는 주문이 한 건도 없음. → LEFT JOIN, COUNT, 안티 조인에서 차이가 남.</li>
+      <li><b>안 팔린 상품</b>: 요가매트(106)는 주문이 없음.</li>
+      <li><b>같은 날 여러 주문</b>: 9월 3일(5·6번), 10월 5일(9·10번)에 각 2건. → 누적합 RANGE 함정, “최신 1건” 동점.</li>
+      <li><b>금액 동점</b>: 320000(1·9번), 38000(5·10번). → RANK와 ROW_NUMBER 차이, LIMIT의 불안정한 결과.</li>
+      <li><b>연속 주문</b>: 김하늘은 9/1·9/2·9/3 사흘 연속 주문. 주문은 8~10월 3개월에 걸쳐 있음. → 갭과 섬, 전월 대비.</li>
+    </ul>
+  </div>
+
+  <details class="setup">
+    <summary>내 MySQL에서 직접 돌려 보기 (테이블 생성 스크립트)</summary>
+<pre><code class="sql">CREATE TABLE customers (
+  customer_id INT PRIMARY KEY,
+  name        VARCHAR(20) NOT NULL,
+  grade       VARCHAR(10),          -- NULL 허용
+  city        VARCHAR(10) NOT NULL,
+  join_date   DATE NOT NULL
+);
+CREATE TABLE products (
+  product_id   INT PRIMARY KEY,
+  product_name VARCHAR(20) NOT NULL,
+  category     VARCHAR(10) NOT NULL,
+  price        INT NOT NULL
+);
+CREATE TABLE orders (
+  order_id    INT PRIMARY KEY,
+  customer_id INT,                  -- 비회원 주문은 NULL
+  product_id  INT NOT NULL,
+  order_date  DATE NOT NULL,
+  qty         INT NOT NULL,
+  amount      INT NOT NULL
+);
+INSERT INTO customers VALUES
+ (1,'김하늘','VIP','서울','2024-01-15'),
+ (2,'이도윤','GOLD','부산','2024-03-02'),
+ (3,'박서연','VIP','서울','2024-05-20'),
+ (4,'최준호',NULL,'대전','2025-02-11'),
+ (5,'정예린','GOLD','서울','2025-06-30');
+INSERT INTO products VALUES
+ (101,'무선청소기','가전',320000),
+ (102,'에어프라이어','가전',129000),
+ (103,'수분크림','뷰티',38000),
+ (104,'선크림','뷰티',25000),
+ (105,'패딩점퍼','패션',189000),
+ (106,'요가매트','생활',45000);
+INSERT INTO orders VALUES
+ (1, 1,   101,'2026-08-14',1,320000),
+ (2, 3,   104,'2026-08-20',3, 75000),
+ (3, 1,   103,'2026-09-01',2, 76000),
+ (4, 1,   104,'2026-09-02',1, 25000),
+ (5, 1,   103,'2026-09-03',1, 38000),
+ (6, 2,   102,'2026-09-03',1,129000),
+ (7, NULL,104,'2026-09-10',2, 50000),
+ (8, 3,   105,'2026-09-21',1,189000),
+ (9, 5,   101,'2026-10-05',1,320000),
+ (10,2,   103,'2026-10-05',1, 38000);</code></pre>
+  </details>
+
+  <h3>쿼리를 짜는 사고 순서</h3>
+  <p>문제를 읽자마자 SELECT부터 쓰지 마세요. 아래 다섯 가지를 먼저 메모하면 쿼리가 거의 자동으로 나옵니다.</p>
+  <ol class="think">
+    <li><b>결과 한 행의 단위는?</b> 고객 1명당 1행? 날짜 1일당 1행? 주문 1건당 1행? <span class="ex">→ 이게 곧 GROUP BY 기준. “~별”이라는 말을 찾으세요.</span></li>
+    <li><b>필요한 테이블은?</b> 필요한 컬럼이 어느 테이블에 있고 조인 키는 무엇인가. <span class="ex">→ 0건인 행도 나와야 하면 그 테이블을 왼쪽에 두고 LEFT JOIN.</span></li>
+    <li><b>무엇을 거르나?</b> <span class="ex">→ 원본 행 조건은 WHERE, 집계 결과 조건은 HAVING, 순위 조건은 감싼 바깥 쿼리. LEFT JOIN 오른쪽 테이블 조건은 ON.</span></li>
+    <li><b>무엇을 계산하나?</b> <span class="ex">→ 합계·개수·평균, 조건부 집계(CASE), 순위·누적·이전 값(윈도우).</span></li>
+    <li><b>어떻게 보여주나?</b> <span class="ex">→ 컬럼명(별칭), 반올림 자릿수, 정렬 기준과 동점 처리, 개수 제한.</span></li>
+  </ol>
+
+  <h4>적용해 보기: “도시별 고객 수와 9월 매출을 구하라. 9월 주문이 없는 도시도 0으로 표시, 매출 큰 순”</h4>
+  <ol class="plain">
+    <li>한 행 = <b>도시</b> → <code class="i">GROUP BY c.city</code></li>
+    <li>도시는 customers, 금액은 orders. 도시가 빠지면 안 되니 <b>customers 기준 LEFT JOIN</b></li>
+    <li>9월 주문만 → 오른쪽 테이블 조건이라 <b>ON에</b> 둔다 (WHERE에 두면 대전이 사라짐, 7장)</li>
+    <li>고객 수는 조인으로 행이 불어나니 <code class="i">COUNT(DISTINCT c.customer_id)</code>, 매출은 <code class="i">IFNULL(SUM(...), 0)</code></li>
+    <li>매출 큰 순 → <code class="i">ORDER BY sep_sales DESC</code></li>
+  </ol>
+<pre><code class="sql">SELECT c.city,
+       COUNT(DISTINCT c.customer_id) AS customer_cnt,
+       IFNULL(SUM(o.amount), 0)      AS sep_sales
+FROM customers c
+LEFT JOIN orders o
+       ON o.customer_id = c.customer_id
+      AND o.order_date BETWEEN '2026-09-01' AND '2026-09-30'
+GROUP BY c.city
+ORDER BY sep_sales DESC;</code></pre><div class="rt"><table><caption>결과 <span>(3행)</span></caption><thead><tr><th>city</th><th>customer_cnt</th><th>sep_sales</th></tr></thead><tbody><tr><td>서울</td><td class="n">3</td><td class="n">328000</td></tr><tr><td>부산</td><td class="n">1</td><td class="n">129000</td></tr><tr><td>대전</td><td class="n">1</td><td class="n">0</td></tr></tbody></table></div>
+  <p>복잡한 문제는 WITH로 단계를 쪼개서, 한 단계씩 결과를 확인하며 쌓아 올리면 됩니다(9장).</p>
+</section>
+
+<!-- ================= 01 ================= -->
+<section class="ch" id="ch1">
+  <div class="ch-head"><span class="num">01</span><h2>SELECT 기초</h2></div>
+  <p class="lede">컬럼 고르기, 계산식과 별칭, 중복 제거, 정렬, 개수 제한.</p>
+
+  <h3>컬럼, 계산식, 별칭</h3>
+<pre><code class="sql">SELECT product_name AS 상품명,          -- AS 별칭
+       price,
+       price * 0.9      sale_price      -- AS는 생략 가능
+FROM products
+WHERE category = '가전';</code></pre><div class="rt"><table><caption>결과 <span>(2행)</span></caption><thead><tr><th>상품명</th><th>price</th><th>sale_price</th></tr></thead><tbody><tr><td>무선청소기</td><td class="n">320000</td><td class="n">288000.0</td></tr><tr><td>에어프라이어</td><td class="n">129000</td><td class="n">116100.0</td></tr></tbody></table></div>
+  <ul class="plain">
+    <li>별칭에 공백·특수문자가 있으면 백틱이나 따옴표로 감쌉니다: <code class="i">AS `판매 가격`</code></li>
+    <li>정수 × 0.9 처럼 소수가 섞이면 결과가 소수(DECIMAL)로 나옵니다. <code class="i">288000.0</code></li>
+  </ul>
+
+  <h3>DISTINCT: 결과 행 전체 기준 중복 제거</h3>
+<pre><code class="sql">SELECT DISTINCT city FROM customers;</code></pre><div class="rt"><table><caption>결과 <span>(3행)</span></caption><thead><tr><th>city</th></tr></thead><tbody><tr><td>서울</td></tr><tr><td>부산</td></tr><tr><td>대전</td></tr></tbody></table></div>
+<pre><code class="sql">SELECT DISTINCT city, grade FROM customers;   -- (city, grade) 조합 기준</code></pre><div class="rt"><table><caption>결과 <span>(4행)</span></caption><thead><tr><th>city</th><th>grade</th></tr></thead><tbody><tr><td>서울</td><td>VIP</td></tr><tr><td>부산</td><td>GOLD</td></tr><tr><td>대전</td><td class="null">NULL</td></tr><tr><td>서울</td><td>GOLD</td></tr></tbody></table></div>
+  <p>(서울, VIP)가 두 명이라 한 번만 나옵니다. DISTINCT는 바로 뒤 컬럼 하나가 아니라 <b>SELECT 목록 전체</b>에 걸려요. NULL끼리는 같은 값으로 취급해 하나로 합칩니다.</p>
+
+  <h3>ORDER BY: 다중 정렬과 NULL의 위치</h3>
+<pre><code class="sql">SELECT name, grade, join_date
+FROM customers
+ORDER BY grade ASC, join_date DESC;   -- 1차: grade 오름차순, 같으면 2차: 가입일 최신순</code></pre><div class="rt"><table><caption>결과 <span>(5행)</span></caption><thead><tr><th>name</th><th>grade</th><th>join_date</th></tr></thead><tbody><tr><td>최준호</td><td class="null">NULL</td><td>2025-02-11</td></tr><tr><td>정예린</td><td>GOLD</td><td>2025-06-30</td></tr><tr><td>이도윤</td><td>GOLD</td><td>2024-03-02</td></tr><tr><td>박서연</td><td>VIP</td><td>2024-05-20</td></tr><tr><td>김하늘</td><td>VIP</td><td>2024-01-15</td></tr></tbody></table></div>
+  <ul class="plain">
+    <li>ASC가 기본값. 방향은 기준마다 따로 붙습니다. <code class="i">ORDER BY a, b DESC</code>는 a 오름차순, b 내림차순.</li>
+    <li>MySQL은 <b>NULL을 가장 작은 값</b>으로 봅니다. 오름차순이면 맨 앞, 내림차순이면 맨 뒤. 위 결과에서 최준호가 첫 줄인 이유.</li>
+  </ul>
+<pre><code class="sql">SELECT name, grade, join_date
+FROM customers
+ORDER BY grade IS NULL, grade, join_date DESC;   -- IS NULL은 0/1 → NULL인 행(1)이 뒤로</code></pre><div class="rt"><table><caption>NULL을 맨 뒤로 <span>(5행)</span></caption><thead><tr><th>name</th><th>grade</th><th>join_date</th></tr></thead><tbody><tr><td>정예린</td><td>GOLD</td><td>2025-06-30</td></tr><tr><td>이도윤</td><td>GOLD</td><td>2024-03-02</td></tr><tr><td>박서연</td><td>VIP</td><td>2024-05-20</td></tr><tr><td>김하늘</td><td>VIP</td><td>2024-01-15</td></tr><tr><td>최준호</td><td class="null">NULL</td><td>2025-02-11</td></tr></tbody></table></div>
+  <p>MySQL에는 <code class="i">NULLS LAST</code> 문법이 없습니다. <code class="i">ORDER BY grade IS NULL, grade</code> 또는 <code class="i">ORDER BY IFNULL(grade, 'ZZZ')</code>로 흉내냅니다.</p>
+
+  <h3>LIMIT / OFFSET</h3>
+<pre><code class="sql">SELECT order_id, amount
+FROM orders
+ORDER BY amount DESC, order_id   -- 동점(320000) 순서를 고정하려고 order_id 추가
+LIMIT 3;</code></pre><div class="rt"><table><caption>결과 <span>(3행)</span></caption><thead><tr><th>order_id</th><th>amount</th></tr></thead><tbody><tr><td class="n">1</td><td class="n">320000</td></tr><tr><td class="n">9</td><td class="n">320000</td></tr><tr><td class="n">8</td><td class="n">189000</td></tr></tbody></table></div>
+<pre><code class="sql">SELECT order_id, amount
+FROM orders
+ORDER BY amount DESC, order_id
+LIMIT 2 OFFSET 3;      -- = LIMIT 3, 2  (건너뛸 개수, 가져올 개수)</code></pre><div class="rt"><table><caption>4~5번째 (3개 건너뛰고 2개) <span>(2행)</span></caption><thead><tr><th>order_id</th><th>amount</th></tr></thead><tbody><tr><td class="n">6</td><td class="n">129000</td></tr><tr><td class="n">3</td><td class="n">76000</td></tr></tbody></table></div>
+
+  <div class="trap"><div class="t">함정</div>
+    <p><code class="i">LIMIT 3, 2</code>에서 <b>앞 숫자가 “건너뛸 개수”</b>입니다. OFFSET 문법과 순서가 반대라 헷갈리기 쉬워요. n위부터 가져오려면 n−1을 건너뜁니다.</p>
+    <p>ORDER BY 없는 LIMIT, 또는 <b>동점이 있는데 2차 기준이 없는</b> ORDER BY + LIMIT은 실행할 때마다 결과가 달라질 수 있습니다. 위에서 금액 320000이 두 건이라 <code class="i">order_id</code>를 2차 기준으로 넣었어요.</p>
+    <p>오름차순 정렬에서 NULL이 맨 앞에 오는 걸 잊고 “가장 작은 값 = 첫 행”으로 답하면 틀립니다.</p>
+  </div>
+
+  <div class="prac" data-id="1-1"><p class="q">상품명과 가격을 가격이 낮은 순으로, 가격이 같으면 상품명 가나다순으로 조회하세요.</p>
+    <div class="answer">
+<pre><code class="sql">SELECT product_name, price
+FROM products
+ORDER BY price ASC, product_name ASC;</code></pre><div class="rt"><table><caption>결과 <span>(6행)</span></caption><thead><tr><th>product_name</th><th>price</th></tr></thead><tbody><tr><td>선크림</td><td class="n">25000</td></tr><tr><td>수분크림</td><td class="n">38000</td></tr><tr><td>요가매트</td><td class="n">45000</td></tr><tr><td>에어프라이어</td><td class="n">129000</td></tr><tr><td>패딩점퍼</td><td class="n">189000</td></tr><tr><td>무선청소기</td><td class="n">320000</td></tr></tbody></table></div></div></div>
+  <div class="prac" data-id="1-2"><p class="q">주문 금액이 큰 순서로 2위와 3위 주문의 order_id와 amount를 조회하세요. 금액이 같으면 order_id가 작은 주문을 앞 순위로 봅니다.</p>
+    <div class="answer">
+<pre><code class="sql">SELECT order_id, amount
+FROM orders
+ORDER BY amount DESC, order_id ASC
+LIMIT 1, 2;          -- = LIMIT 2 OFFSET 1</code></pre><div class="rt"><table><caption>결과 <span>(2행)</span></caption><thead><tr><th>order_id</th><th>amount</th></tr></thead><tbody><tr><td class="n">9</td><td class="n">320000</td></tr><tr><td class="n">8</td><td class="n">189000</td></tr></tbody></table></div>
+    <p>1위가 1번(320000), 2위가 9번(320000), 3위가 8번. “동점도 같은 순위로”라는 조건이 붙으면 LIMIT 대신 RANK(10장)를 써야 합니다.</p></div></div>
+  <div class="prac" data-id="1-3"><p class="q">고객 이름과 등급을 등급 오름차순으로 조회하되, 등급이 없는 고객은 맨 뒤에, 같은 등급 안에서는 이름 가나다순으로 정렬하세요.</p>
+    <div class="answer">
+<pre><code class="sql">SELECT name, grade
+FROM customers
+ORDER BY grade IS NULL, grade, name;</code></pre><div class="rt"><table><caption>결과 <span>(5행)</span></caption><thead><tr><th>name</th><th>grade</th></tr></thead><tbody><tr><td>이도윤</td><td>GOLD</td></tr><tr><td>정예린</td><td>GOLD</td></tr><tr><td>김하늘</td><td>VIP</td></tr><tr><td>박서연</td><td>VIP</td></tr><tr><td>최준호</td><td class="null">NULL</td></tr></tbody></table></div></div></div>
+</section>
+
+<!-- ================= 02 ================= -->
+<section class="ch" id="ch2">
+  <div class="ch-head"><span class="num">02</span><h2>WHERE 조건</h2></div>
+  <p class="lede">원본 행을 한 줄씩 보면서 남길지 버릴지 정하는 단계입니다. 조건 결과가 <b>참(TRUE)인 행만</b> 남아요. 거짓과 NULL은 둘 다 버려집니다.</p>
+
+<pre><code class="sql">WHERE price &gt;= 100000                       -- 비교: =  !=  &lt;&gt;  &gt;  &gt;=  &lt;  &lt;=
+WHERE price BETWEEN 30000 AND 130000        -- 양 끝 포함 (30000 &lt;= price &lt;= 130000)
+WHERE category IN ('가전', '뷰티')           -- 목록 중 하나와 같으면
+WHERE category NOT IN ('패션', '생활')
+WHERE product_name LIKE '%크림'             -- % : 0글자 이상 아무 문자
+WHERE name LIKE '_서연'                      -- _ : 정확히 1글자
+WHERE grade IS NULL                         -- NULL은 = 로 비교 불가 (3장)
+WHERE NOT (a = 1 AND b = 2)                 -- 논리 연산: NOT &gt; AND &gt; OR 순서로 먼저 계산</code></pre>
+
+<pre><code class="sql">SELECT order_id, order_date, amount
+FROM orders
+WHERE order_date BETWEEN '2026-09-01' AND '2026-09-03';</code></pre><div class="rt"><table><caption>결과 <span>(4행)</span></caption><thead><tr><th>order_id</th><th>order_date</th><th>amount</th></tr></thead><tbody><tr><td class="n">3</td><td>2026-09-01</td><td class="n">76000</td></tr><tr><td class="n">4</td><td>2026-09-02</td><td class="n">25000</td></tr><tr><td class="n">5</td><td>2026-09-03</td><td class="n">38000</td></tr><tr><td class="n">6</td><td>2026-09-03</td><td class="n">129000</td></tr></tbody></table></div>
+<pre><code class="sql">SELECT product_name FROM products WHERE product_name LIKE '%크림';</code></pre><div class="rt"><table><caption>&#x27;%크림&#x27;: 크림으로 끝나는 <span>(2행)</span></caption><thead><tr><th>product_name</th></tr></thead><tbody><tr><td>수분크림</td></tr><tr><td>선크림</td></tr></tbody></table></div>
+<pre><code class="sql">SELECT product_name FROM products WHERE product_name LIKE '_크림';</code></pre><div class="rt"><table><caption>&#x27;_크림&#x27;: 한 글자 + 크림 <span>(1행)</span></caption><thead><tr><th>product_name</th></tr></thead><tbody><tr><td>선크림</td></tr></tbody></table></div>
+
+  <h3>AND가 OR보다 먼저 계산된다</h3>
+  <p>의도: “서울 또는 부산에 사는 VIP 고객”</p>
+<pre><code class="sql">SELECT name, city, grade
+FROM customers
+WHERE city = '서울' OR city = '부산' AND grade = 'VIP';
+-- 실제 해석: city = '서울' OR (city = '부산' AND grade = 'VIP')</code></pre><div class="rt"><table><caption>잘못된 결과 <span>(3행)</span></caption><thead><tr><th>name</th><th>city</th><th>grade</th></tr></thead><tbody><tr><td>김하늘</td><td>서울</td><td>VIP</td></tr><tr><td>박서연</td><td>서울</td><td>VIP</td></tr><tr><td>정예린</td><td>서울</td><td>GOLD</td></tr></tbody></table></div>
+<pre><code class="sql">SELECT name, city, grade
+FROM customers
+WHERE (city = '서울' OR city = '부산') AND grade = 'VIP';
+-- 또는 WHERE city IN ('서울', '부산') AND grade = 'VIP'</code></pre><div class="rt"><table><caption>의도한 결과 <span>(2행)</span></caption><thead><tr><th>name</th><th>city</th><th>grade</th></tr></thead><tbody><tr><td>김하늘</td><td>서울</td><td>VIP</td></tr><tr><td>박서연</td><td>서울</td><td>VIP</td></tr></tbody></table></div>
+
+  <h3>!= 는 NULL을 걸러 버린다</h3>
+<pre><code class="sql">SELECT name, grade FROM customers WHERE grade != 'VIP';</code></pre><div class="rt"><table><caption>&#x27;VIP가 아닌 고객&#x27;인데 최준호가 없다 <span>(2행)</span></caption><thead><tr><th>name</th><th>grade</th></tr></thead><tbody><tr><td>이도윤</td><td>GOLD</td></tr><tr><td>정예린</td><td>GOLD</td></tr></tbody></table></div>
+  <p>최준호의 grade는 NULL이라 <code class="i">NULL != 'VIP'</code>의 결과가 참이 아니라 NULL입니다. WHERE는 참인 행만 남기므로 빠져요. 포함하려면 <code class="i">WHERE grade != 'VIP' OR grade IS NULL</code>.</p>
+
+  <div class="trap"><div class="t">함정</div>
+    <p>OR가 섞이면 무조건 괄호. 결과가 가장 흔하게 틀어지는 곳입니다.</p>
+    <p><code class="i">!=</code>, <code class="i">NOT IN</code>, <code class="i">NOT LIKE</code> 같은 부정 조건은 <b>NULL 행을 함께 버립니다</b>. “~가 아닌 것 전부”라는 문제에선 NULL 행이 포함돼야 하는지 꼭 확인하세요.</p>
+    <p>컬럼이 DATETIME이면 <code class="i">BETWEEN '2026-09-01' AND '2026-09-30'</code>은 30일 <b>00:00:00까지만</b> 포함합니다. 하루 전체를 넣으려면 <code class="i">order_dt &gt;= '2026-09-01' AND order_dt &lt; '2026-10-01'</code>.</p>
+    <p>MySQL 기본 정렬규칙(utf8mb4_0900_ai_ci)은 대소문자를 구분하지 않습니다. <code class="i">'abc' = 'ABC'</code>가 참, <code class="i">LIKE 'a%'</code>도 'A…'에 걸려요.</p>
+  </div>
+
+  <div class="prac" data-id="2-1"><p class="q">2026년 9월(9/1~9/30)에 발생한 주문 중 금액이 50,000원 이상인 주문의 order_id, order_date, amount를 조회하세요.</p>
+    <div class="answer">
+<pre><code class="sql">SELECT order_id, order_date, amount
+FROM orders
+WHERE order_date BETWEEN '2026-09-01' AND '2026-09-30'
+  AND amount &gt;= 50000;</code></pre><div class="rt"><table><caption>결과 <span>(4행)</span></caption><thead><tr><th>order_id</th><th>order_date</th><th>amount</th></tr></thead><tbody><tr><td class="n">3</td><td>2026-09-01</td><td class="n">76000</td></tr><tr><td class="n">6</td><td>2026-09-03</td><td class="n">129000</td></tr><tr><td class="n">7</td><td>2026-09-10</td><td class="n">50000</td></tr><tr><td class="n">8</td><td>2026-09-21</td><td class="n">189000</td></tr></tbody></table></div>
+    <p>50000원짜리 7번 주문도 “이상”이라 포함됩니다. 경계값 포함 여부(&gt; vs &gt;=)에서 실수가 잦아요.</p></div></div>
+  <div class="prac" data-id="2-2"><p class="q">등급이 VIP가 <b>아닌</b> 고객의 이름과 등급을 모두 조회하세요. 등급이 없는 고객도 VIP가 아니므로 포함해야 합니다.</p>
+    <div class="answer">
+<pre><code class="sql">SELECT name, grade
+FROM customers
+WHERE grade != 'VIP' OR grade IS NULL;</code></pre><div class="rt"><table><caption>결과 <span>(3행)</span></caption><thead><tr><th>name</th><th>grade</th></tr></thead><tbody><tr><td>이도윤</td><td>GOLD</td></tr><tr><td>최준호</td><td class="null">NULL</td></tr><tr><td>정예린</td><td>GOLD</td></tr></tbody></table></div>
+    <p><code class="i">WHERE NOT (grade &lt;=&gt; 'VIP')</code>도 같은 결과. <code class="i">&lt;=&gt;</code>는 NULL끼리도 비교되는 “NULL-safe 등호”입니다(3장).</p></div></div>
+  <div class="prac" data-id="2-3"><p class="q">성이 ‘김’ 또는 ‘박’이면서 서울에 사는 고객의 이름을 조회하세요.</p>
+    <div class="answer">
+<pre><code class="sql">SELECT name
+FROM customers
+WHERE (name LIKE '김%' OR name LIKE '박%')
+  AND city = '서울';</code></pre><div class="rt"><table><caption>결과 <span>(2행)</span></caption><thead><tr><th>name</th></tr></thead><tbody><tr><td>김하늘</td></tr><tr><td>박서연</td></tr></tbody></table></div>
+    <p>괄호를 빼면 <code class="i">name LIKE '김%' OR (name LIKE '박%' AND city = '서울')</code>로 해석됩니다. 이 데이터에선 결과가 우연히 같지만 서울이 아닌 김씨가 있었다면 틀려요.</p></div></div>
+</section>
+
+<!-- ================= 03 ================= -->
+<section class="ch" id="ch3">
+  <div class="ch-head"><span class="num">03</span><h2>NULL 다루기</h2></div>
+  <p class="lede">NULL은 “값을 모름”입니다. 0도 빈 문자열도 아니에요. 그래서 NULL과 비교하거나 계산하면 결과도 “모름”(NULL)이 됩니다.</p>
+
+<pre><code class="sql">SELECT name FROM customers WHERE grade = NULL;</code></pre><div class="rt"><table><caption>= NULL은 항상 0행 <span>(0행)</span></caption><thead><tr><th>name</th></tr></thead><tbody><tr><td class="empty" colspan="1">결과 없음 (0행)</td></tr></tbody></table></div>
+<pre><code class="sql">SELECT name FROM customers WHERE grade IS NULL;</code></pre><div class="rt"><table><caption>결과 <span>(1행)</span></caption><thead><tr><th>name</th></tr></thead><tbody><tr><td>최준호</td></tr></tbody></table></div>
+<pre><code class="sql">SELECT NULL + 1          AS plus,
+       CONCAT('a', NULL) AS concat_null,
+       NULL = NULL       AS eq,
+       NULL &lt;=&gt; NULL     AS null_safe_eq;</code></pre><div class="rt"><table><caption>NULL이 섞인 계산 <span>(1행)</span></caption><thead><tr><th>plus</th><th>concat_null</th><th>eq</th><th>null_safe_eq</th></tr></thead><tbody><tr><td class="null">NULL</td><td class="null">NULL</td><td class="null">NULL</td><td class="n">1</td></tr></tbody></table></div>
+  <p><code class="i">&lt;=&gt;</code>는 MySQL의 NULL-safe 비교로, NULL끼리 같으면 1을 돌려줍니다.</p>
+
+  <h3>NULL 대체 함수: IFNULL, COALESCE, NULLIF</h3>
+<pre><code class="sql">SELECT name, grade,
+       IFNULL(grade, '일반')    AS ifnull_g,     -- NULL이면 두 번째 값 (인자 2개)
+       COALESCE(grade, city)    AS coalesce_g,   -- 왼쪽부터 처음 NULL 아닌 값 (인자 여러 개)
+       NULLIF(grade, 'GOLD')    AS nullif_g      -- 두 값이 같으면 NULL, 다르면 첫 번째 값
+FROM customers;</code></pre><div class="rt"><table><caption>결과 <span>(5행)</span></caption><thead><tr><th>name</th><th>grade</th><th>ifnull_g</th><th>coalesce_g</th><th>nullif_g</th></tr></thead><tbody><tr><td>김하늘</td><td>VIP</td><td>VIP</td><td>VIP</td><td>VIP</td></tr><tr><td>이도윤</td><td>GOLD</td><td>GOLD</td><td>GOLD</td><td class="null">NULL</td></tr><tr><td>박서연</td><td>VIP</td><td>VIP</td><td>VIP</td><td>VIP</td></tr><tr><td>최준호</td><td class="null">NULL</td><td>일반</td><td>대전</td><td class="null">NULL</td></tr><tr><td>정예린</td><td>GOLD</td><td>GOLD</td><td>GOLD</td><td class="null">NULL</td></tr></tbody></table></div>
+  <p>NULLIF의 대표 용도는 0으로 나누기 방지입니다: <code class="i">a / NULLIF(b, 0)</code> → b가 0이면 NULL. (MySQL은 0으로 나누면 에러 대신 NULL을 주지만, 의도를 드러내는 습관이에요.)</p>
+
+  <h3>집계함수와 NULL</h3>
+<pre><code class="sql">SELECT COUNT(*)                    AS cnt_rows,       -- 행 수
+       COUNT(customer_id)          AS cnt_not_null,   -- NULL이 아닌 값의 수
+       COUNT(DISTINCT customer_id) AS cnt_customers,  -- 서로 다른 값의 수 (NULL 제외)
+       SUM(amount)                 AS total
+FROM orders;</code></pre><div class="rt"><table><caption>결과 <span>(1행)</span></caption><thead><tr><th>cnt_rows</th><th>cnt_not_null</th><th>cnt_customers</th><th>total</th></tr></thead><tbody><tr><td class="n">10</td><td class="n">9</td><td class="n">4</td><td class="n">1260000</td></tr></tbody></table></div>
+  <ul class="plain">
+    <li>SUM, AVG, MIN, MAX, COUNT(컬럼)은 모두 <b>NULL을 무시</b>합니다.</li>
+    <li>AVG는 NULL을 0으로 치지 않고 <b>아예 빼고 나눕니다</b>. 아래에서 100, NULL, 200의 평균은 300/2 = 150.</li>
+  </ul>
+<pre><code class="sql">SELECT AVG(x)            AS avg_skip_null,
+       AVG(IFNULL(x, 0)) AS avg_null_as_0
+FROM (SELECT 100 AS x UNION ALL SELECT NULL UNION ALL SELECT 200) t;</code></pre><div class="rt"><table><caption>결과 <span>(1행)</span></caption><thead><tr><th>avg_skip_null</th><th>avg_null_as_0</th></tr></thead><tbody><tr><td class="n">150.0000</td><td class="n">100.0000</td></tr></tbody></table></div>
+<pre><code class="sql">SELECT COUNT(*) AS cnt, SUM(amount) AS total
+FROM orders
+WHERE customer_id = 4;      -- 최준호는 주문이 없음</code></pre><div class="rt"><table><caption>대상 행이 하나도 없으면 <span>(1행)</span></caption><thead><tr><th>cnt</th><th>total</th></tr></thead><tbody><tr><td class="n">0</td><td class="null">NULL</td></tr></tbody></table></div>
+  <p>COUNT는 0, SUM은 <b>0이 아니라 NULL</b>입니다. “없으면 0으로” 요구가 있으면 <code class="i">IFNULL(SUM(amount), 0)</code>.</p>
+
+  <div class="trap"><div class="t">함정</div>
+    <p><code class="i">= NULL</code>, <code class="i">!= NULL</code>은 문법 에러가 아니라 <b>조용히 0행</b>을 돌려줍니다. 반드시 IS NULL / IS NOT NULL.</p>
+    <p>“평균을 구하되 값이 없으면 0으로 간주” → <code class="i">AVG(IFNULL(col, 0))</code>. 그냥 AVG를 쓰면 분모가 달라집니다.</p>
+    <p>LEFT JOIN으로 생긴 NULL(7장), NOT IN과 NULL(8장)도 같은 원리라 다시 나옵니다.</p>
+  </div>
+
+  <div class="prac" data-id="3-1"><p class="q">고객 정보가 없는 비회원 주문의 order_id와 amount를 조회하세요.</p>
+    <div class="answer">
+<pre><code class="sql">SELECT order_id, amount
+FROM orders
+WHERE customer_id IS NULL;</code></pre><div class="rt"><table><caption>결과 <span>(1행)</span></caption><thead><tr><th>order_id</th><th>amount</th></tr></thead><tbody><tr><td class="n">7</td><td class="n">50000</td></tr></tbody></table></div></div></div>
+  <div class="prac" data-id="3-2"><p class="q">모든 고객의 이름과 등급을 조회하되, 등급이 없으면 ‘일반’으로 표시하세요. 컬럼명은 grade로 하세요.</p>
+    <div class="answer">
+<pre><code class="sql">SELECT name, IFNULL(grade, '일반') AS grade
+FROM customers;</code></pre><div class="rt"><table><caption>결과 <span>(5행)</span></caption><thead><tr><th>name</th><th>grade</th></tr></thead><tbody><tr><td>김하늘</td><td>VIP</td></tr><tr><td>이도윤</td><td>GOLD</td></tr><tr><td>박서연</td><td>VIP</td></tr><tr><td>최준호</td><td>일반</td></tr><tr><td>정예린</td><td>GOLD</td></tr></tbody></table></div>
+    <p><code class="i">COALESCE(grade, '일반')</code>도 정답. 별칭을 원래 컬럼명과 같게 지어도 됩니다.</p></div></div>
+  <div class="prac" data-id="3-3"><p class="q">orders 테이블에서 전체 주문 수, 회원 주문 수, 주문한 회원 수를 한 행으로 조회하세요.</p>
+    <div class="answer">
+<pre><code class="sql">SELECT COUNT(*)                    AS total_orders,
+       COUNT(customer_id)          AS member_orders,
+       COUNT(DISTINCT customer_id) AS member_cnt
+FROM orders;</code></pre><div class="rt"><table><caption>결과 <span>(1행)</span></caption><thead><tr><th>total_orders</th><th>member_orders</th><th>member_cnt</th></tr></thead><tbody><tr><td class="n">10</td><td class="n">9</td><td class="n">4</td></tr></tbody></table></div>
+    <p>COUNT 세 가지의 차이를 한 번에 보여주는 문제. 6장에서 다시 정리합니다.</p></div></div>
+</section>
+
+<!-- ================= 04 ================= -->
+<section class="ch" id="ch4">
+  <div class="ch-head"><span class="num">04</span><h2>CASE WHEN과 IF</h2></div>
+  <p class="lede">SQL 안의 조건문. 분류 컬럼 만들기, 사용자 정의 정렬, 조건부 집계, 피벗까지 전부 이걸로 합니다.</p>
+
+  <h3>검색형 CASE (가장 많이 씀)</h3>
+<pre><code class="sql">SELECT product_name, price,
+       CASE WHEN price &gt;= 200000 THEN '고가'
+            WHEN price &gt;= 50000  THEN '중가'
+            ELSE '저가'
+       END AS price_band
+FROM products;</code></pre><div class="rt"><table><caption>결과 <span>(6행)</span></caption><thead><tr><th>product_name</th><th>price</th><th>price_band</th></tr></thead><tbody><tr><td>무선청소기</td><td class="n">320000</td><td>고가</td></tr><tr><td>에어프라이어</td><td class="n">129000</td><td>중가</td></tr><tr><td>수분크림</td><td class="n">38000</td><td>저가</td></tr><tr><td>선크림</td><td class="n">25000</td><td>저가</td></tr><tr><td>패딩점퍼</td><td class="n">189000</td><td>중가</td></tr><tr><td>요가매트</td><td class="n">45000</td><td>저가</td></tr></tbody></table></div>
+  <p>위에서부터 검사해 <b>처음 참이 되는 THEN</b> 하나만 돌려줍니다. 그래서 두 번째 조건에 <code class="i">price &lt; 200000</code>을 또 쓸 필요가 없어요. 반대로 순서를 잘못 쓰면 이렇게 됩니다.</p>
+<pre><code class="sql">SELECT product_name, price,
+       CASE WHEN price &gt;= 50000  THEN '중가'     -- 넓은 조건이 먼저 와서
+            WHEN price &gt;= 200000 THEN '고가'     -- 이 줄엔 영원히 도달 못 함
+            ELSE '저가'
+       END AS price_band
+FROM products
+WHERE price &gt;= 50000;</code></pre><div class="rt"><table><caption>조건 순서가 틀리면 무선청소기도 &#x27;중가&#x27; <span>(3행)</span></caption><thead><tr><th>product_name</th><th>price</th><th>price_band</th></tr></thead><tbody><tr><td>무선청소기</td><td class="n">320000</td><td>중가</td></tr><tr><td>에어프라이어</td><td class="n">129000</td><td>중가</td></tr><tr><td>패딩점퍼</td><td class="n">189000</td><td>중가</td></tr></tbody></table></div>
+
+  <h3>단순형 CASE: 값 비교. 사용자 정의 정렬에 유용</h3>
+<pre><code class="sql">SELECT name, grade
+FROM customers
+ORDER BY CASE grade WHEN 'VIP'  THEN 1
+                    WHEN 'GOLD' THEN 2
+                    ELSE 3 END,
+         name;</code></pre><div class="rt"><table><caption>결과 <span>(5행)</span></caption><thead><tr><th>name</th><th>grade</th></tr></thead><tbody><tr><td>김하늘</td><td>VIP</td></tr><tr><td>박서연</td><td>VIP</td></tr><tr><td>이도윤</td><td>GOLD</td></tr><tr><td>정예린</td><td>GOLD</td></tr><tr><td>최준호</td><td class="null">NULL</td></tr></tbody></table></div>
+  <p>단순형은 <code class="i">=</code> 비교만 하므로 <code class="i">CASE grade WHEN NULL THEN …</code>은 절대 참이 안 됩니다. NULL은 검색형 <code class="i">CASE WHEN grade IS NULL THEN …</code>으로. MySQL 전용으로 <code class="i">ORDER BY FIELD(grade, 'VIP', 'GOLD')</code>도 있어요(목록에 없는 값은 0이라 맨 앞).</p>
+
+  <h3>IF(): 조건이 하나일 때 짧게 (MySQL 전용)</h3>
+<pre><code class="sql">SELECT order_id, customer_id,
+       IF(customer_id IS NULL, '비회원', '회원') AS member_type   -- IF(조건, 참일 때, 거짓일 때)
+FROM orders
+WHERE order_id BETWEEN 6 AND 8;</code></pre><div class="rt"><table><caption>결과 <span>(3행)</span></caption><thead><tr><th>order_id</th><th>customer_id</th><th>member_type</th></tr></thead><tbody><tr><td class="n">6</td><td class="n">2</td><td>회원</td></tr><tr><td class="n">7</td><td class="null">NULL</td><td>비회원</td></tr><tr><td class="n">8</td><td class="n">3</td><td>회원</td></tr></tbody></table></div>
+
+  <h3>조건부 집계: 집계함수 안에 CASE</h3>
+  <p>“조건에 맞는 것만” 세거나 더할 때 씁니다. 세는 방법이 세 가지인데, 하나는 틀린 방법이에요.</p>
+<pre><code class="sql">SELECT COUNT(*)                                            AS all_orders,
+       COUNT(CASE WHEN amount &gt;= 100000 THEN 1 END)        AS big_count,    -- ELSE 없음 → NULL → 안 셈
+       SUM(CASE WHEN amount &gt;= 100000 THEN 1 ELSE 0 END)   AS big_sum,
+       SUM(amount &gt;= 100000)                               AS big_mysql,    -- 비교식이 1/0을 돌려줌
+       COUNT(CASE WHEN amount &gt;= 100000 THEN 1 ELSE 0 END) AS wrong         -- 0도 세어버림!
+FROM orders;</code></pre><div class="rt"><table><caption>결과 <span>(1행)</span></caption><thead><tr><th>all_orders</th><th>big_count</th><th>big_sum</th><th>big_mysql</th><th>wrong</th></tr></thead><tbody><tr><td class="n">10</td><td class="n">4</td><td class="n">4</td><td class="n">4</td><td class="n">10</td></tr></tbody></table></div>
+
+  <h3>피벗: 행을 열로 펼치기</h3>
+<pre><code class="sql">SELECT DATE_FORMAT(o.order_date, '%Y-%m')                         AS ym,
+       SUM(CASE WHEN p.category = '가전' THEN o.amount ELSE 0 END) AS appliance,
+       SUM(CASE WHEN p.category = '뷰티' THEN o.amount ELSE 0 END) AS beauty,
+       SUM(CASE WHEN p.category = '패션' THEN o.amount ELSE 0 END) AS fashion
+FROM orders o
+JOIN products p ON o.product_id = p.product_id
+GROUP BY ym
+ORDER BY ym;</code></pre><div class="rt"><table><caption>결과 <span>(3행)</span></caption><thead><tr><th>ym</th><th>appliance</th><th>beauty</th><th>fashion</th></tr></thead><tbody><tr><td>2026-08</td><td class="n">320000</td><td class="n">75000</td><td class="n">0</td></tr><tr><td>2026-09</td><td class="n">129000</td><td class="n">189000</td><td class="n">189000</td></tr><tr><td>2026-10</td><td class="n">320000</td><td class="n">38000</td><td class="n">0</td></tr></tbody></table></div>
+  <p>월(행) × 카테고리(열) 표가 됩니다. ELSE 0을 빼면 해당 없는 칸이 0 대신 NULL로 나와요.</p>
+
+  <div class="trap"><div class="t">함정</div>
+    <p><code class="i">COUNT(CASE WHEN … THEN 1 ELSE 0 END)</code>는 <b>전체 행 수</b>가 나옵니다(위 결과의 wrong = 10). COUNT는 NULL만 안 셀 뿐, 0은 셉니다. COUNT면 ELSE를 빼고, SUM이면 ELSE 0.</p>
+    <p>ELSE를 생략한 CASE는 해당 없는 행에서 NULL을 돌려줍니다. 분류 컬럼에서 ELSE를 빼먹으면 NULL 분류가 생겨요.</p>
+    <p>범위 조건은 <b>좁은(큰) 조건부터</b> 씁니다. CASE는 첫 번째 참에서 멈춥니다.</p>
+    <p>THEN 값들의 타입은 맞추세요. 숫자와 문자를 섞으면 전부 문자로 바뀌어 정렬이 이상해집니다.</p>
+  </div>
+
+  <div class="prac" data-id="4-1"><p class="q">상품명과, 가격이 100,000원 이상이면 ‘프리미엄’ 아니면 ‘일반’인 tier 컬럼을 조회하세요. CASE와 IF 두 가지로 써 보세요.</p>
+    <div class="answer">
+<pre><code class="sql">SELECT product_name,
+       CASE WHEN price &gt;= 100000 THEN '프리미엄' ELSE '일반' END AS tier
+FROM products;</code></pre><div class="rt"><table><caption>결과 <span>(6행)</span></caption><thead><tr><th>product_name</th><th>tier</th></tr></thead><tbody><tr><td>무선청소기</td><td>프리미엄</td></tr><tr><td>에어프라이어</td><td>프리미엄</td></tr><tr><td>수분크림</td><td>일반</td></tr><tr><td>선크림</td><td>일반</td></tr><tr><td>패딩점퍼</td><td>프리미엄</td></tr><tr><td>요가매트</td><td>일반</td></tr></tbody></table></div>
+<pre><code class="sql">SELECT product_name,
+       IF(price &gt;= 100000, '프리미엄', '일반') AS tier
+FROM products;</code></pre></div></div>
+  <div class="prac" data-id="4-2"><p class="q">회원별로 가전 주문 건수(appliance_cnt)와 뷰티 주문 건수(beauty_cnt)를 한 행에 조회하세요. customer_id 순으로 정렬.</p>
+    <div class="answer">
+<pre><code class="sql">SELECT o.customer_id,
+       COUNT(CASE WHEN p.category = '가전' THEN 1 END) AS appliance_cnt,
+       SUM(p.category = '뷰티')                        AS beauty_cnt
+FROM orders o
+JOIN products p ON o.product_id = p.product_id
+WHERE o.customer_id IS NOT NULL
+GROUP BY o.customer_id
+ORDER BY o.customer_id;</code></pre><div class="rt"><table><caption>결과 <span>(4행)</span></caption><thead><tr><th>customer_id</th><th>appliance_cnt</th><th>beauty_cnt</th></tr></thead><tbody><tr><td class="n">1</td><td class="n">1</td><td class="n">3</td></tr><tr><td class="n">2</td><td class="n">1</td><td class="n">1</td></tr><tr><td class="n">3</td><td class="n">0</td><td class="n">1</td></tr><tr><td class="n">5</td><td class="n">1</td><td class="n">0</td></tr></tbody></table></div>
+    <p>두 컬럼에 서로 다른 방법을 썼지만 결과는 같은 원리. 비회원 주문을 빼는 WHERE를 잊으면 customer_id가 NULL인 행이 하나 더 생깁니다.</p></div></div>
+  <div class="prac" data-id="4-3"><p class="q">주문 금액이 100,000 이상이면 ‘대형’, 50,000 이상이면 ‘중형’, 나머지는 ‘소형’으로 분류하고 분류별 주문 수를 구하세요. 결과는 대형 → 중형 → 소형 순서로.</p>
+    <div class="answer">
+<pre><code class="sql">SELECT CASE WHEN amount &gt;= 100000 THEN '대형'
+            WHEN amount &gt;= 50000  THEN '중형'
+            ELSE '소형'
+       END AS size_type,
+       COUNT(*) AS cnt
+FROM orders
+GROUP BY size_type
+ORDER BY FIELD(size_type, '대형', '중형', '소형');</code></pre><div class="rt"><table><caption>결과 <span>(3행)</span></caption><thead><tr><th>size_type</th><th>cnt</th></tr></thead><tbody><tr><td>대형</td><td class="n">4</td></tr><tr><td>중형</td><td class="n">3</td></tr><tr><td>소형</td><td class="n">3</td></tr></tbody></table></div>
+    <p>MySQL은 GROUP BY에 SELECT 별칭을 허용합니다(표준 SQL에선 CASE 식 전체를 다시 써야 함). 한글을 그냥 ORDER BY 하면 가나다순(대형, 소형, 중형)이 되므로 FIELD나 CASE로 순서를 지정합니다.</p></div></div>
+  <div class="prac" data-id="4-4"><p class="q">도시별로 VIP 고객 수, GOLD 고객 수, 등급 없는 고객 수를 한 행씩 조회하세요(피벗). 해당 고객이 없으면 0.</p>
+    <div class="answer">
+<pre><code class="sql">SELECT city,
+       COUNT(CASE WHEN grade = 'VIP'  THEN 1 END) AS vip,
+       COUNT(CASE WHEN grade = 'GOLD' THEN 1 END) AS gold,
+       COUNT(CASE WHEN grade IS NULL  THEN 1 END) AS no_grade
+FROM customers
+GROUP BY city
+ORDER BY city;</code></pre><div class="rt"><table><caption>결과 <span>(3행)</span></caption><thead><tr><th>city</th><th>vip</th><th>gold</th><th>no_grade</th></tr></thead><tbody><tr><td>대전</td><td class="n">0</td><td class="n">0</td><td class="n">1</td></tr><tr><td>부산</td><td class="n">0</td><td class="n">1</td><td class="n">0</td></tr><tr><td>서울</td><td class="n">2</td><td class="n">1</td><td class="n">0</td></tr></tbody></table></div>
+    <p>짧게 <code class="i">SUM(grade = 'VIP')</code>로 쓰면 함정이 하나 있습니다. 대전에는 최준호(grade NULL) 한 명뿐이라 <code class="i">grade = 'VIP'</code>가 NULL이 되고, SUM은 NULL만 있으면 0이 아니라 <b>NULL</b>을 돌려줘요.</p>
+<pre><code class="sql">SELECT city,
+       SUM(grade = 'VIP')  AS vip,
+       SUM(grade = 'GOLD') AS gold,
+       SUM(grade IS NULL)  AS no_grade
+FROM customers
+GROUP BY city
+ORDER BY city;</code></pre><div class="rt"><table><caption>SUM(조건식) 버전: 대전이 NULL <span>(3행)</span></caption><thead><tr><th>city</th><th>vip</th><th>gold</th><th>no_grade</th></tr></thead><tbody><tr><td>대전</td><td class="null">NULL</td><td class="null">NULL</td><td class="n">1</td></tr><tr><td>부산</td><td class="n">0</td><td class="n">1</td><td class="n">0</td></tr><tr><td>서울</td><td class="n">2</td><td class="n">1</td><td class="n">0</td></tr></tbody></table></div>
+    <p>NULL이 섞일 수 있는 컬럼이면 COUNT(CASE …)나 <code class="i">SUM(CASE WHEN … THEN 1 ELSE 0 END)</code>가 안전합니다. <code class="i">IS NULL</code>은 항상 0/1이라 no_grade는 문제없어요.</p></div></div>
+</section>
+
+<!-- ================= 05 ================= -->
+<section class="ch" id="ch5">
+  <div class="ch-head"><span class="num">05</span><h2>날짜·문자·숫자 함수</h2></div>
+  <p class="lede">자주 쓰는 것만 추렸습니다. 오른쪽 주석이 결과값이고, 전부 MySQL 8.0에서 실행해 확인한 값이에요.</p>
+
+  <h3>날짜</h3>
+<pre><code class="sql">DATE_FORMAT('2026-09-03', '%Y-%m')              -- '2026-09'
+DATE_FORMAT('2026-09-03', '%Y년 %m월 %d일')      -- '2026년 09월 03일'
+DATE_FORMAT('2026-09-03', '%y/%c/%e %a')         -- '26/9/3 Thu'
+-- %Y 4자리 연도  %y 2자리  %m 월(01~12)  %c 월(1~12)  %d 일(01~31)  %e 일(1~31)
+-- %H 시(00~23)  %i 분  %s 초  %W 요일(Thursday)  %a 요일(Thu)
+DATE_FORMAT('2026-09-03', '%Y-%m-01')            -- '2026-09-01'  (그 달 1일)
+
+YEAR('2026-09-03'), MONTH('2026-09-03'), DAY('2026-09-03')   -- 2026, 9, 3
+QUARTER('2026-09-03')                            -- 3
+DAYOFWEEK('2026-09-03')                          -- 5   (1=일 2=월 … 7=토)
+WEEKDAY('2026-09-03')                            -- 3   (0=월 1=화 … 6=일)
+DAYNAME('2026-09-03')                            -- 'Thursday'
+HOUR('2026-09-03 14:30:00'), MINUTE('2026-09-03 14:30:00')   -- 14, 30
+DATE('2026-09-03 14:30:00')                      -- '2026-09-03'  (DATETIME → 날짜만)
+
+DATEDIFF('2026-09-10', '2026-09-01')             -- 9    (앞 − 뒤, 일 단위, 시간 무시)
+DATEDIFF('2026-09-01', '2026-09-10')             -- -9
+TIMESTAMPDIFF(DAY,   '2026-09-01', '2026-09-10') -- 9    (뒤 − 앞, 단위 지정)
+TIMESTAMPDIFF(MONTH, '2026-01-31', '2026-02-28') -- 0    (꽉 찬 한 달이 안 됨)
+TIMESTAMPDIFF(YEAR,  '2024-01-15', '2026-10-24') -- 2    (만 나이 계산과 같은 방식)
+
+DATE_ADD('2026-09-01', INTERVAL 7 DAY)           -- '2026-09-08'
+DATE_SUB('2026-09-01', INTERVAL 1 MONTH)         -- '2026-08-01'
+DATE_ADD('2026-01-31', INTERVAL 1 MONTH)         -- '2026-02-28'  (말일 보정)
+'2026-09-01' + INTERVAL 1 DAY                    -- '2026-09-02'  (이렇게도 가능)
+LAST_DAY('2026-02-10')                           -- '2026-02-28'
+STR_TO_DATE('2026/09/03', '%Y/%m/%d')            -- '2026-09-03'  (문자 → 날짜)
+CURDATE()                                        -- 오늘 날짜
+NOW()                                            -- 현재 날짜+시각</code></pre>
+
+<pre><code class="sql">SELECT order_id, order_date,
+       DATE_FORMAT(order_date, '%Y-%m')       AS ym,
+       DAYNAME(order_date)                    AS day_name,
+       DATEDIFF('2026-10-31', order_date)     AS days_ago
+FROM orders
+WHERE order_id &lt;= 4;</code></pre><div class="rt"><table><caption>테이블에 적용 <span>(4행)</span></caption><thead><tr><th>order_id</th><th>order_date</th><th>ym</th><th>day_name</th><th>days_ago</th></tr></thead><tbody><tr><td class="n">1</td><td>2026-08-14</td><td>2026-08</td><td>Friday</td><td class="n">78</td></tr><tr><td class="n">2</td><td>2026-08-20</td><td>2026-08</td><td>Thursday</td><td class="n">72</td></tr><tr><td class="n">3</td><td>2026-09-01</td><td>2026-09</td><td>Tuesday</td><td class="n">60</td></tr><tr><td class="n">4</td><td>2026-09-02</td><td>2026-09</td><td>Wednesday</td><td class="n">59</td></tr></tbody></table></div>
+
+  <div class="trap"><div class="t">함정</div>
+    <p><b>DATEDIFF는 앞 − 뒤, TIMESTAMPDIFF는 뒤 − 앞</b>. 인자 순서가 반대라서 부호가 자주 틀립니다. “큰 날짜를 DATEDIFF 앞에”라고 외우세요.</p>
+    <p>월별 집계는 <code class="i">DATE_FORMAT(order_date, '%Y-%m')</code>로 묶습니다. <code class="i">MONTH()</code>만 쓰면 2025년 9월과 2026년 9월이 합쳐져요.</p>
+    <p>TIMESTAMPDIFF(MONTH/YEAR)는 <b>꽉 채운</b> 개월·연 수만 셉니다. 1/31 → 2/28은 0개월.</p>
+    <p>DAYOFWEEK(1=일요일)와 WEEKDAY(0=월요일)는 시작 요일과 시작 숫자가 모두 다릅니다.</p>
+  </div>
+
+  <h3>문자열</h3>
+<pre><code class="sql">CONCAT('[', '가전', '] ', '무선청소기')           -- '[가전] 무선청소기'
+CONCAT('a', NULL)                                -- NULL  (하나라도 NULL이면 NULL)
+CONCAT_WS('-', '2026', NULL, '09')               -- '2026-09'  (구분자 지정, NULL은 건너뜀)
+SUBSTRING('2026-09-03', 6, 2)                    -- '09'  (6번째 글자부터 2글자, 1부터 셈)
+SUBSTRING('2026-09-03', 6)                       -- '09-03'  (끝까지)
+SUBSTR('2026-09-03', -2)                         -- '03'  (음수면 뒤에서부터)
+LEFT('2026-09-03', 7), RIGHT('2026-09-03', 2)    -- '2026-09', '03'
+CHAR_LENGTH('수분크림')                           -- 4   (글자 수)
+LENGTH('수분크림')                                -- 12  (바이트 수, utf8mb4 한글은 3바이트)
+REPLACE('010-1234-5678', '-', '')                -- '01012345678'
+TRIM('  sql  '), UPPER('mysql'), LOWER('SQL')    -- 'sql', 'MYSQL', 'sql'
+LPAD('7', 3, '0'), RPAD('ab', 4, '*')            -- '007', 'ab**'
+INSTR('kim@mail.com', '@')                       -- 4   (위치, 없으면 0)
+LOCATE('@', 'kim@mail.com')                      -- 4   (인자 순서가 INSTR와 반대!)
+SUBSTRING_INDEX('kim@mail.com', '@', 1)          -- 'kim'       (구분자 1번째 앞까지)
+SUBSTRING_INDEX('kim@mail.com', '@', -1)         -- 'mail.com'  (뒤에서 1번째 구분자 뒤)
+REVERSE('abc'), REPEAT('ab', 3)                  -- 'cba', 'ababab'</code></pre>
+<pre><code class="sql">SELECT product_name,
+       CHAR_LENGTH(product_name)                 AS len,
+       LEFT(product_name, 2)                     AS head2,
+       CONCAT(category, '/', product_name)       AS label
+FROM products
+WHERE category IN ('가전', '뷰티');</code></pre><div class="rt"><table><caption>결과 <span>(4행)</span></caption><thead><tr><th>product_name</th><th>len</th><th>head2</th><th>label</th></tr></thead><tbody><tr><td>무선청소기</td><td class="n">5</td><td>무선</td><td>가전/무선청소기</td></tr><tr><td>에어프라이어</td><td class="n">6</td><td>에어</td><td>가전/에어프라이어</td></tr><tr><td>수분크림</td><td class="n">4</td><td>수분</td><td>뷰티/수분크림</td></tr><tr><td>선크림</td><td class="n">3</td><td>선크</td><td>뷰티/선크림</td></tr></tbody></table></div>
+
+  <h3>숫자</h3>
+<pre><code class="sql">ROUND(123.456, 1)        -- 123.5    반올림
+ROUND(123.456)           -- 123      자릿수 생략 = 0
+ROUND(125, -1)           -- 130      음수 = 정수 자리 (십의 자리로)
+TRUNCATE(123.456, 1)     -- 123.4    버림 (자릿수 인자 필수)
+CEIL(1.2), FLOOR(1.8)    -- 2, 1     올림, 내림
+FLOOR(-1.2)              -- -2       음수 내림은 더 작은 쪽으로
+MOD(10, 3), 10 % 3       -- 1, 1     나머지
+7 / 2                    -- 3.5000   MySQL의 / 는 항상 소수 나눗셈
+7 DIV 2                  -- 3        정수 몫
+1 / 0                    -- NULL     0으로 나누면 NULL (에러 아님)
+ABS(-5), POWER(2, 10)    -- 5, 1024
+FORMAT(1234567.891, 2)   -- '1,234,567.89'  천 단위 쉼표 (결과는 문자열)
+CAST('123' AS UNSIGNED) + 1   -- 124</code></pre>
+
+  <div class="trap"><div class="t">함정</div>
+    <p>비율은 <code class="i">ROUND(a / b * 100, 1)</code>처럼 <b>곱한 다음 반올림</b>. <code class="i">ROUND(a / b, 1) * 100</code>은 정밀도를 잃습니다(0.3 × 100 = 30.0).</p>
+    <p>“버림”이면 TRUNCATE(또는 FLOOR), “반올림”이면 ROUND. 둘을 헷갈리면 소수 자리가 달라져 오답.</p>
+    <p>CHAR_LENGTH(글자 수) vs LENGTH(바이트 수). 한글 길이는 반드시 CHAR_LENGTH.</p>
+  </div>
+
+  <div class="prac" data-id="5-1"><p class="q">월(YYYY-MM)별 주문 건수와 매출 합계를 월 순서대로 조회하세요.</p>
+    <div class="answer">
+<pre><code class="sql">SELECT DATE_FORMAT(order_date, '%Y-%m') AS ym,
+       COUNT(*)    AS order_cnt,
+       SUM(amount) AS sales
+FROM orders
+GROUP BY ym
+ORDER BY ym;</code></pre><div class="rt"><table><caption>결과 <span>(3행)</span></caption><thead><tr><th>ym</th><th>order_cnt</th><th>sales</th></tr></thead><tbody><tr><td>2026-08</td><td class="n">2</td><td class="n">395000</td></tr><tr><td>2026-09</td><td class="n">6</td><td class="n">507000</td></tr><tr><td>2026-10</td><td class="n">2</td><td class="n">358000</td></tr></tbody></table></div></div></div>
+  <div class="prac" data-id="5-2"><p class="q">가입 연도별 고객 수를 조회하세요.</p>
+    <div class="answer">
+<pre><code class="sql">SELECT YEAR(join_date) AS join_year, COUNT(*) AS cnt
+FROM customers
+GROUP BY join_year
+ORDER BY join_year;</code></pre><div class="rt"><table><caption>결과 <span>(2행)</span></caption><thead><tr><th>join_year</th><th>cnt</th></tr></thead><tbody><tr><td class="n">2024</td><td class="n">3</td></tr><tr><td class="n">2025</td><td class="n">2</td></tr></tbody></table></div></div></div>
+  <div class="prac" data-id="5-3"><p class="q">고객별로 가입일부터 2026-10-24까지의 경과 일수(days)와 꽉 채운 경과 개월 수(months)를 조회하세요.</p>
+    <div class="answer">
+<pre><code class="sql">SELECT name, join_date,
+       DATEDIFF('2026-10-24', join_date)              AS days,
+       TIMESTAMPDIFF(MONTH, join_date, '2026-10-24')  AS months
+FROM customers;</code></pre><div class="rt"><table><caption>결과 <span>(5행)</span></caption><thead><tr><th>name</th><th>join_date</th><th>days</th><th>months</th></tr></thead><tbody><tr><td>김하늘</td><td>2024-01-15</td><td class="n">1013</td><td class="n">33</td></tr><tr><td>이도윤</td><td>2024-03-02</td><td class="n">966</td><td class="n">31</td></tr><tr><td>박서연</td><td>2024-05-20</td><td class="n">887</td><td class="n">29</td></tr><tr><td>최준호</td><td>2025-02-11</td><td class="n">620</td><td class="n">20</td></tr><tr><td>정예린</td><td>2025-06-30</td><td class="n">481</td><td class="n">15</td></tr></tbody></table></div>
+    <p>DATEDIFF는 큰 날짜가 앞, TIMESTAMPDIFF는 큰 날짜가 뒤. 오늘 기준이면 <code class="i">CURDATE()</code>를 씁니다.</p></div></div>
+  <div class="prac" data-id="5-4"><p class="q">요일별 주문 건수를 월요일부터 일요일 순서로 조회하세요. 요일은 영문 이름(Monday …)으로 표시하고, 주문이 없는 요일은 안 나와도 됩니다.</p>
+    <div class="answer">
+<pre><code class="sql">SELECT DAYNAME(order_date) AS day_name,
+       COUNT(*)            AS cnt
+FROM orders
+GROUP BY WEEKDAY(order_date), DAYNAME(order_date)
+ORDER BY WEEKDAY(order_date);</code></pre><div class="rt"><table><caption>결과 <span>(5행)</span></caption><thead><tr><th>day_name</th><th>cnt</th></tr></thead><tbody><tr><td>Monday</td><td class="n">3</td></tr><tr><td>Tuesday</td><td class="n">1</td></tr><tr><td>Wednesday</td><td class="n">1</td></tr><tr><td>Thursday</td><td class="n">4</td></tr><tr><td>Friday</td><td class="n">1</td></tr></tbody></table></div>
+    <p>DAYNAME으로 정렬하면 알파벳순(Friday, Monday, …)이 됩니다. 정렬용으로 WEEKDAY(월=0)를 함께 GROUP BY 해 두면 ONLY_FULL_GROUP_BY에도 걸리지 않아요.</p></div></div>
+</section>
+
+<!-- ================= 06 ================= -->
+<section class="ch" id="ch6">
+  <div class="ch-head"><span class="num">06</span><h2>그룹함수와 GROUP BY</h2></div>
+  <p class="lede">여러 행을 하나로 접는 단계. “~별”이 붙은 것이 GROUP BY 기준이고, 결과 한 행 = 그룹 하나입니다.</p>
+
+  <h3>COUNT 3종의 차이</h3>
+<pre><code class="sql">SELECT COUNT(*)                    AS count_star,      -- 행 수 (NULL이 있어도 셈)
+       COUNT(customer_id)          AS count_col,       -- 그 컬럼이 NULL이 아닌 행 수
+       COUNT(DISTINCT customer_id) AS count_distinct   -- NULL 아닌 서로 다른 값의 수
+FROM orders;</code></pre><div class="rt"><table><caption>결과 <span>(1행)</span></caption><thead><tr><th>count_star</th><th>count_col</th><th>count_distinct</th></tr></thead><tbody><tr><td class="n">10</td><td class="n">9</td><td class="n">4</td></tr></tbody></table></div>
+  <ul class="plain">
+    <li><code class="i">COUNT(*)</code> = <code class="i">COUNT(1)</code>: 그냥 행 수. 10.</li>
+    <li><code class="i">COUNT(customer_id)</code>: 비회원 주문(NULL) 1건을 빼서 9.</li>
+    <li><code class="i">COUNT(DISTINCT customer_id)</code>: 1, 2, 3, 5 → 4. “구매 고객 수”, “방문자 수”는 거의 항상 이것.</li>
+  </ul>
+
+  <h3>GROUP BY + 집계함수</h3>
+<pre><code class="sql">SELECT p.category,
+       COUNT(*)                AS order_cnt,
+       SUM(o.amount)           AS sales,
+       ROUND(AVG(o.amount))    AS avg_amount,
+       MIN(o.amount)           AS min_amount,
+       MAX(o.amount)           AS max_amount
+FROM orders o
+JOIN products p ON o.product_id = p.product_id
+GROUP BY p.category
+ORDER BY sales DESC;</code></pre><div class="rt"><table><caption>결과 <span>(3행)</span></caption><thead><tr><th>category</th><th>order_cnt</th><th>sales</th><th>avg_amount</th><th>min_amount</th><th>max_amount</th></tr></thead><tbody><tr><td>가전</td><td class="n">3</td><td class="n">769000</td><td class="n">256333</td><td class="n">129000</td><td class="n">320000</td></tr><tr><td>뷰티</td><td class="n">6</td><td class="n">302000</td><td class="n">50333</td><td class="n">25000</td><td class="n">76000</td></tr><tr><td>패션</td><td class="n">1</td><td class="n">189000</td><td class="n">189000</td><td class="n">189000</td><td class="n">189000</td></tr></tbody></table></div>
+<pre><code class="sql">SELECT customer_id,
+       COUNT(*)                                              AS cnt,
+       GROUP_CONCAT(order_id ORDER BY order_id SEPARATOR ',') AS order_ids
+FROM orders
+GROUP BY customer_id
+ORDER BY customer_id;</code></pre><div class="rt"><table><caption>GROUP_CONCAT: 그룹 안의 값을 문자열로 이어 붙이기 <span>(5행)</span></caption><thead><tr><th>customer_id</th><th>cnt</th><th>order_ids</th></tr></thead><tbody><tr><td class="null">NULL</td><td class="n">1</td><td>7</td></tr><tr><td class="n">1</td><td class="n">4</td><td>1,3,4,5</td></tr><tr><td class="n">2</td><td class="n">2</td><td>6,10</td></tr><tr><td class="n">3</td><td class="n">2</td><td>2,8</td></tr><tr><td class="n">5</td><td class="n">1</td><td>9</td></tr></tbody></table></div>
+  <p>customer_id가 NULL인 주문도 <b>NULL이라는 하나의 그룹</b>으로 묶여 나옵니다. 회원만 보려면 WHERE로 먼저 빼세요.</p>
+
+  <h3>HAVING: 그룹을 거르는 WHERE</h3>
+<pre><code class="sql">SELECT p.category, COUNT(*) AS order_cnt
+FROM orders o
+JOIN products p ON o.product_id = p.product_id
+GROUP BY p.category
+HAVING COUNT(*) &gt;= 3
+ORDER BY order_cnt DESC;</code></pre><div class="rt"><table><caption>결과 <span>(2행)</span></caption><thead><tr><th>category</th><th>order_cnt</th></tr></thead><tbody><tr><td>뷰티</td><td class="n">6</td></tr><tr><td>가전</td><td class="n">3</td></tr></tbody></table></div>
+  <h4>WHERE와 HAVING 비교</h4>
+  <div class="pair">
+<pre><code class="sql">SELECT customer_id, SUM(amount) AS total
+FROM orders
+WHERE amount &gt;= 50000
+  AND customer_id IS NOT NULL
+GROUP BY customer_id
+ORDER BY customer_id;</code></pre><div class="rt"><table><caption>WHERE: 5만 원 이상 &#x27;주문&#x27;만 모아서 합계 <span>(4행)</span></caption><thead><tr><th>customer_id</th><th>total</th></tr></thead><tbody><tr><td class="n">1</td><td class="n">396000</td></tr><tr><td class="n">2</td><td class="n">129000</td></tr><tr><td class="n">3</td><td class="n">264000</td></tr><tr><td class="n">5</td><td class="n">320000</td></tr></tbody></table></div>
+<pre><code class="sql">SELECT customer_id, SUM(amount) AS total
+FROM orders
+WHERE customer_id IS NOT NULL
+GROUP BY customer_id
+HAVING SUM(amount) &gt;= 200000
+ORDER BY customer_id;</code></pre><div class="rt"><table><caption>HAVING: 합계가 20만 원 이상인 &#x27;고객&#x27;만 <span>(3행)</span></caption><thead><tr><th>customer_id</th><th>total</th></tr></thead><tbody><tr><td class="n">1</td><td class="n">459000</td></tr><tr><td class="n">3</td><td class="n">264000</td></tr><tr><td class="n">5</td><td class="n">320000</td></tr></tbody></table></div>
+  </div>
+  <p>김하늘(1)의 합계가 다릅니다. WHERE는 묶기 <b>전</b>에 2만 5천 원, 3만 8천 원짜리 주문을 버렸고, HAVING은 묶은 <b>뒤</b> 합계를 보고 고객 자체를 남기거나 버렸어요.</p>
+
+  <h3>여러 컬럼으로 묶기</h3>
+<pre><code class="sql">SELECT customer_id,
+       DATE_FORMAT(order_date, '%Y-%m') AS ym,
+       COUNT(*)    AS cnt,
+       SUM(amount) AS total
+FROM orders
+WHERE customer_id IS NOT NULL
+GROUP BY customer_id, ym
+ORDER BY customer_id, ym;</code></pre><div class="rt"><table><caption>고객 × 월 단위 <span>(7행)</span></caption><thead><tr><th>customer_id</th><th>ym</th><th>cnt</th><th>total</th></tr></thead><tbody><tr><td class="n">1</td><td>2026-08</td><td class="n">1</td><td class="n">320000</td></tr><tr><td class="n">1</td><td>2026-09</td><td class="n">3</td><td class="n">139000</td></tr><tr><td class="n">2</td><td>2026-09</td><td class="n">1</td><td class="n">129000</td></tr><tr><td class="n">2</td><td>2026-10</td><td class="n">1</td><td class="n">38000</td></tr><tr><td class="n">3</td><td>2026-08</td><td class="n">1</td><td class="n">75000</td></tr><tr><td class="n">3</td><td>2026-09</td><td class="n">1</td><td class="n">189000</td></tr><tr><td class="n">5</td><td>2026-10</td><td class="n">1</td><td class="n">320000</td></tr></tbody></table></div>
+
+  <h3>ONLY_FULL_GROUP_BY</h3>
+  <p>MySQL 8의 기본 설정에선 SELECT에 <b>GROUP BY에 없는 컬럼을 집계 없이</b> 쓰면 에러가 납니다.</p>
+<pre><code class="sql">SELECT customer_id, order_date, SUM(amount)
+FROM orders
+GROUP BY customer_id;</code></pre><div class="err"><b>ERROR 1055</b> Expression #2 of SELECT list is not in GROUP BY clause and contains nonaggregated column &#x27;study.orders.order_date&#x27; which is not functionally dependent on columns in GROUP BY clause; this is incompatible with sql_mode=only_full_group_by</div>
+  <p>한 고객에 order_date가 여러 개인데 어느 걸 보여줄지 정할 수 없기 때문입니다. GROUP BY에 추가하거나 <code class="i">MAX(order_date)</code>처럼 집계하세요. 단, GROUP BY 컬럼이 PK이면 같은 테이블의 다른 컬럼은 허용됩니다(<code class="i">GROUP BY c.customer_id</code> 후 <code class="i">c.name</code> 사용 가능).</p>
+
+  <div class="trap"><div class="t">함정</div>
+    <p>WHERE는 그룹 전, HAVING은 그룹 후. “5만 원 이상 <b>주문만</b> 대상으로”는 WHERE, “합계 5만 원 이상인 <b>고객만</b>”은 HAVING.</p>
+    <p>“구매 고객 수”를 <code class="i">COUNT(*)</code>로 세면 주문 수가 나옵니다. <code class="i">COUNT(DISTINCT customer_id)</code>.</p>
+    <p>GROUP BY 결과는 정렬이 보장되지 않습니다(MySQL 8부터 암묵적 정렬 없음). 순서가 필요하면 ORDER BY를 꼭 쓰세요.</p>
+    <p>NULL 키도 하나의 그룹이 됩니다. 문제에서 “회원만”이라면 <code class="i">WHERE customer_id IS NOT NULL</code>.</p>
+  </div>
+
+  <div class="prac" data-id="6-1"><p class="q">카테고리별 상품 수와 평균 가격(정수로 반올림)을 조회하세요. 상품 수가 많은 순, 같으면 카테고리 이름순.</p>
+    <div class="answer">
+<pre><code class="sql">SELECT category,
+       COUNT(*)           AS product_cnt,
+       ROUND(AVG(price))  AS avg_price
+FROM products
+GROUP BY category
+ORDER BY product_cnt DESC, category;</code></pre><div class="rt"><table><caption>결과 <span>(4행)</span></caption><thead><tr><th>category</th><th>product_cnt</th><th>avg_price</th></tr></thead><tbody><tr><td>가전</td><td class="n">2</td><td class="n">224500</td></tr><tr><td>뷰티</td><td class="n">2</td><td class="n">31500</td></tr><tr><td>생활</td><td class="n">1</td><td class="n">45000</td></tr><tr><td>패션</td><td class="n">1</td><td class="n">189000</td></tr></tbody></table></div></div></div>
+  <div class="prac" data-id="6-2"><p class="q">회원별 총 주문금액을 구하고, 200,000원 이상인 회원만 금액이 큰 순으로 조회하세요.</p>
+    <div class="answer">
+<pre><code class="sql">SELECT customer_id, SUM(amount) AS total
+FROM orders
+WHERE customer_id IS NOT NULL
+GROUP BY customer_id
+HAVING SUM(amount) &gt;= 200000
+ORDER BY total DESC;</code></pre><div class="rt"><table><caption>결과 <span>(3행)</span></caption><thead><tr><th>customer_id</th><th>total</th></tr></thead><tbody><tr><td class="n">1</td><td class="n">459000</td></tr><tr><td class="n">5</td><td class="n">320000</td></tr><tr><td class="n">3</td><td class="n">264000</td></tr></tbody></table></div></div></div>
+  <div class="prac" data-id="6-3"><p class="q">주문이 2건 이상 발생한 날짜와 그날의 주문 건수를 조회하세요.</p>
+    <div class="answer">
+<pre><code class="sql">SELECT order_date, COUNT(*) AS cnt
+FROM orders
+GROUP BY order_date
+HAVING COUNT(*) &gt;= 2
+ORDER BY order_date;</code></pre><div class="rt"><table><caption>결과 <span>(2행)</span></caption><thead><tr><th>order_date</th><th>cnt</th></tr></thead><tbody><tr><td>2026-09-03</td><td class="n">2</td></tr><tr><td>2026-10-05</td><td class="n">2</td></tr></tbody></table></div></div></div>
+  <div class="prac" data-id="6-4"><p class="q">회원별로 주문 건수와 <b>서로 다른 상품</b>을 몇 종류 샀는지를 조회하세요.</p>
+    <div class="answer">
+<pre><code class="sql">SELECT customer_id,
+       COUNT(*)                   AS order_cnt,
+       COUNT(DISTINCT product_id) AS product_kinds
+FROM orders
+WHERE customer_id IS NOT NULL
+GROUP BY customer_id
+ORDER BY customer_id;</code></pre><div class="rt"><table><caption>결과 <span>(4행)</span></caption><thead><tr><th>customer_id</th><th>order_cnt</th><th>product_kinds</th></tr></thead><tbody><tr><td class="n">1</td><td class="n">4</td><td class="n">3</td></tr><tr><td class="n">2</td><td class="n">2</td><td class="n">2</td></tr><tr><td class="n">3</td><td class="n">2</td><td class="n">2</td></tr><tr><td class="n">5</td><td class="n">1</td><td class="n">1</td></tr></tbody></table></div>
+    <p>김하늘은 4번 주문했지만 수분크림(103)을 두 번 사서 상품 종류는 3.</p></div></div>
+</section>
+
+<!-- ================= 07 ================= -->
+<section class="ch" id="ch7">
+  <div class="ch-head"><span class="num">07</span><h2>JOIN</h2></div>
+  <p class="lede">테이블을 옆으로 붙입니다. 어떤 행이 남고, 어떤 행이 사라지고, 어떤 행이 <b>복제</b>되는지가 전부예요.</p>
+
+  <ul class="plain">
+    <li><b>INNER JOIN</b> (그냥 JOIN): 양쪽 다 짝이 있는 행만.</li>
+    <li><b>LEFT JOIN</b>: 왼쪽은 전부 남기고, 짝이 없으면 오른쪽 컬럼을 NULL로 채움.</li>
+    <li><b>RIGHT JOIN</b>: 반대. 보통은 테이블 순서를 바꿔 LEFT로 씁니다.</li>
+    <li><b>CROSS JOIN</b>: 모든 조합(5명 × 6상품 = 30행). 날짜 × 상품 같은 “뼈대” 만들 때.</li>
+    <li>MySQL엔 <b>FULL OUTER JOIN이 없습니다</b>. LEFT JOIN과 RIGHT JOIN을 UNION으로 합칩니다(11장).</li>
+  </ul>
+
+  <h3>INNER JOIN: 짝 없는 행은 사라진다</h3>
+<pre><code class="sql">SELECT o.order_id, c.name, o.amount
+FROM orders o
+JOIN customers c ON o.customer_id = c.customer_id
+ORDER BY o.order_id;</code></pre><div class="rt"><table><caption>결과 <span>(9행)</span></caption><thead><tr><th>order_id</th><th>name</th><th>amount</th></tr></thead><tbody><tr><td class="n">1</td><td>김하늘</td><td class="n">320000</td></tr><tr><td class="n">2</td><td>박서연</td><td class="n">75000</td></tr><tr><td class="n">3</td><td>김하늘</td><td class="n">76000</td></tr><tr><td class="n">4</td><td>김하늘</td><td class="n">25000</td></tr><tr><td class="n">5</td><td>김하늘</td><td class="n">38000</td></tr><tr><td class="n">6</td><td>이도윤</td><td class="n">129000</td></tr><tr><td class="n">8</td><td>박서연</td><td class="n">189000</td></tr><tr><td class="n">9</td><td>정예린</td><td class="n">320000</td></tr><tr><td class="n">10</td><td>이도윤</td><td class="n">38000</td></tr></tbody></table></div>
+  <p>주문은 10건인데 9행입니다. 비회원 주문 7번은 customers에 짝이 없어서(NULL은 어떤 값과도 같지 않음) 빠졌어요.</p>
+
+  <h3>LEFT JOIN으로 0건까지 세기</h3>
+<pre><code class="sql">SELECT c.name,
+       COUNT(*)          AS count_star,    -- 틀림
+       COUNT(o.order_id) AS order_cnt      -- 맞음
+FROM customers c
+LEFT JOIN orders o ON c.customer_id = o.customer_id
+GROUP BY c.customer_id, c.name
+ORDER BY c.customer_id;</code></pre><div class="rt"><table><caption>결과 <span>(5행)</span></caption><thead><tr><th>name</th><th>count_star</th><th>order_cnt</th></tr></thead><tbody><tr><td>김하늘</td><td class="n">4</td><td class="n">4</td></tr><tr><td>이도윤</td><td class="n">2</td><td class="n">2</td></tr><tr><td>박서연</td><td class="n">2</td><td class="n">2</td></tr><tr><td>최준호</td><td class="n">1</td><td class="n">0</td></tr><tr><td>정예린</td><td class="n">1</td><td class="n">1</td></tr></tbody></table></div>
+  <p>최준호는 주문이 없지만 LEFT JOIN이 NULL로 채운 <b>행 하나</b>를 만들기 때문에 <code class="i">COUNT(*)</code>는 1이 됩니다. 반드시 <b>오른쪽 테이블의 NOT NULL 컬럼</b>(주로 PK)을 세세요.</p>
+
+  <h3>LEFT JOIN 조건을 ON에 두느냐 WHERE에 두느냐</h3>
+<pre><code class="sql">SELECT c.name, o.order_id, o.amount
+FROM customers c
+LEFT JOIN orders o
+       ON c.customer_id = o.customer_id
+      AND o.amount &gt;= 100000
+ORDER BY c.customer_id;</code></pre><div class="rt"><table><caption>(A) ON에 조건: 고객은 전부 남고, 10만 원 이상 주문만 붙음 <span>(5행)</span></caption><thead><tr><th>name</th><th>order_id</th><th>amount</th></tr></thead><tbody><tr><td>김하늘</td><td class="n">1</td><td class="n">320000</td></tr><tr><td>이도윤</td><td class="n">6</td><td class="n">129000</td></tr><tr><td>박서연</td><td class="n">8</td><td class="n">189000</td></tr><tr><td>최준호</td><td class="null">NULL</td><td class="null">NULL</td></tr><tr><td>정예린</td><td class="n">9</td><td class="n">320000</td></tr></tbody></table></div>
+<pre><code class="sql">SELECT c.name, o.order_id, o.amount
+FROM customers c
+LEFT JOIN orders o ON c.customer_id = o.customer_id
+WHERE o.amount &gt;= 100000
+ORDER BY c.customer_id;</code></pre><div class="rt"><table><caption>(B) WHERE에 조건: 붙인 뒤 거르므로 NULL 행(최준호)이 사라짐 <span>(4행)</span></caption><thead><tr><th>name</th><th>order_id</th><th>amount</th></tr></thead><tbody><tr><td>김하늘</td><td class="n">1</td><td class="n">320000</td></tr><tr><td>이도윤</td><td class="n">6</td><td class="n">129000</td></tr><tr><td>박서연</td><td class="n">8</td><td class="n">189000</td></tr><tr><td>정예린</td><td class="n">9</td><td class="n">320000</td></tr></tbody></table></div>
+  <p>(B)에서 최준호 행은 amount가 NULL이라 <code class="i">NULL &gt;= 100000</code>이 참이 아니어서 버려집니다. 결과적으로 INNER JOIN과 같아져요. <b>오른쪽 테이블에 거는 조건은 ON에</b>. (INNER JOIN이면 ON이든 WHERE든 결과가 같습니다.)</p>
+
+  <h3>짝이 없는 행 찾기 (안티 조인)</h3>
+<pre><code class="sql">SELECT c.customer_id, c.name
+FROM customers c
+LEFT JOIN orders o ON c.customer_id = o.customer_id
+WHERE o.order_id IS NULL;      -- 오른쪽 PK가 NULL = 짝이 없었다</code></pre><div class="rt"><table><caption>결과 <span>(1행)</span></caption><thead><tr><th>customer_id</th><th>name</th></tr></thead><tbody><tr><td class="n">4</td><td>최준호</td></tr></tbody></table></div>
+
+  <h3>셀프 조인: 같은 테이블을 두 번</h3>
+<pre><code class="sql">SELECT a.name AS name1, b.name AS name2, a.city
+FROM customers a
+JOIN customers b
+  ON a.city = b.city
+ AND a.customer_id &lt; b.customer_id     -- &lt; 로 (나, 나)와 (A,B)/(B,A) 중복 제거
+ORDER BY a.customer_id, b.customer_id;</code></pre><div class="rt"><table><caption>같은 도시에 사는 고객 쌍 <span>(3행)</span></caption><thead><tr><th>name1</th><th>name2</th><th>city</th></tr></thead><tbody><tr><td>김하늘</td><td>박서연</td><td>서울</td></tr><tr><td>김하늘</td><td>정예린</td><td>서울</td></tr><tr><td>박서연</td><td>정예린</td><td>서울</td></tr></tbody></table></div>
+  <p><code class="i">&lt;&gt;</code>를 쓰면 (김하늘, 박서연)과 (박서연, 김하늘)이 둘 다 나와 6행이 됩니다. 셀프 조인은 “같은 고객의 이전 주문”, “같은 날 다른 주문” 같은 문제에도 쓰이지만, 요즘은 대부분 윈도우 함수(LAG)로 더 쉽게 풉니다.</p>
+
+  <h3>행 뻥튀기 (1:N 조인)</h3>
+  <p>고객 1명에 주문이 여러 건이면, 조인 후 고객 행이 주문 수만큼 <b>복제</b>됩니다. 고객 단위 값을 세거나 더할 때 부풀려져요.</p>
+<pre><code class="sql">SELECT c.city,
+       COUNT(*)                      AS wrong_customer_cnt,  -- 주문 행 수
+       COUNT(DISTINCT c.customer_id) AS customer_cnt
+FROM customers c
+JOIN orders o ON c.customer_id = o.customer_id
+GROUP BY c.city
+ORDER BY c.city;</code></pre><div class="rt"><table><caption>결과 <span>(2행)</span></caption><thead><tr><th>city</th><th>wrong_customer_cnt</th><th>customer_cnt</th></tr></thead><tbody><tr><td>부산</td><td class="n">2</td><td class="n">1</td></tr><tr><td>서울</td><td class="n">7</td><td class="n">3</td></tr></tbody></table></div>
+  <p>서울 고객은 3명인데 주문이 7건이라 COUNT(*)는 7. 1:N 관계 두 개(예: 주문과 리뷰)를 한꺼번에 붙이면 주문 수 × 리뷰 수만큼 곱해져 SUM까지 틀어집니다. 그럴 땐 <b>각각 먼저 고객 단위로 GROUP BY 해서 1행으로 줄인 다음</b> 조인하세요.</p>
+
+  <div class="trap"><div class="t">함정</div>
+    <p>LEFT JOIN 뒤 WHERE에 오른쪽 테이블 조건을 쓰면 LEFT가 INNER로 변합니다(<code class="i">IS NULL</code> 검사만 예외).</p>
+    <p>LEFT JOIN 후 개수는 <code class="i">COUNT(오른쪽.PK)</code>, 합계는 <code class="i">IFNULL(SUM(오른쪽.값), 0)</code>.</p>
+    <p>조인 후 GROUP BY는 이름 같은 표시용 컬럼보다 <b>PK로</b> 묶으세요. 동명이인이 있으면 합쳐집니다.</p>
+    <p>MySQL에서 <code class="i">FULL OUTER JOIN</code>을 쓰면 문법 에러가 납니다. 11장의 UNION 방식으로.</p>
+  </div>
+
+  <div class="prac" data-id="7-1"><p class="q">회원 주문별로 주문번호, 고객 이름, 상품명, 금액을 주문번호 순으로 조회하세요.</p>
+    <div class="answer">
+<pre><code class="sql">SELECT o.order_id, c.name, p.product_name, o.amount
+FROM orders o
+JOIN customers c ON o.customer_id = c.customer_id
+JOIN products  p ON o.product_id  = p.product_id
+ORDER BY o.order_id;</code></pre><div class="rt"><table><caption>결과 <span>(9행)</span></caption><thead><tr><th>order_id</th><th>name</th><th>product_name</th><th>amount</th></tr></thead><tbody><tr><td class="n">1</td><td>김하늘</td><td>무선청소기</td><td class="n">320000</td></tr><tr><td class="n">2</td><td>박서연</td><td>선크림</td><td class="n">75000</td></tr><tr><td class="n">3</td><td>김하늘</td><td>수분크림</td><td class="n">76000</td></tr><tr><td class="n">4</td><td>김하늘</td><td>선크림</td><td class="n">25000</td></tr><tr><td class="n">5</td><td>김하늘</td><td>수분크림</td><td class="n">38000</td></tr><tr><td class="n">6</td><td>이도윤</td><td>에어프라이어</td><td class="n">129000</td></tr><tr><td class="n">8</td><td>박서연</td><td>패딩점퍼</td><td class="n">189000</td></tr><tr><td class="n">9</td><td>정예린</td><td>무선청소기</td><td class="n">320000</td></tr><tr><td class="n">10</td><td>이도윤</td><td>수분크림</td><td class="n">38000</td></tr></tbody></table></div>
+    <p>세 테이블 조인은 JOIN … ON을 두 번 이어 쓰면 됩니다. INNER JOIN이라 비회원 주문은 자연히 빠져요.</p></div></div>
+  <div class="prac" data-id="7-2"><p class="q">한 번도 팔리지 않은 상품의 상품명과 가격을 조회하세요.</p>
+    <div class="answer">
+<pre><code class="sql">SELECT p.product_name, p.price
+FROM products p
+LEFT JOIN orders o ON p.product_id = o.product_id
+WHERE o.order_id IS NULL;</code></pre><div class="rt"><table><caption>결과 <span>(1행)</span></caption><thead><tr><th>product_name</th><th>price</th></tr></thead><tbody><tr><td>요가매트</td><td class="n">45000</td></tr></tbody></table></div></div></div>
+  <div class="prac" data-id="7-3"><p class="q">상품별 총 판매 수량을 구하세요. 안 팔린 상품도 0으로 나와야 합니다. 상품번호 순.</p>
+    <div class="answer">
+<pre><code class="sql">SELECT p.product_id, p.product_name,
+       IFNULL(SUM(o.qty), 0) AS total_qty
+FROM products p
+LEFT JOIN orders o ON p.product_id = o.product_id
+GROUP BY p.product_id, p.product_name
+ORDER BY p.product_id;</code></pre><div class="rt"><table><caption>결과 <span>(6행)</span></caption><thead><tr><th>product_id</th><th>product_name</th><th>total_qty</th></tr></thead><tbody><tr><td class="n">101</td><td>무선청소기</td><td class="n">2</td></tr><tr><td class="n">102</td><td>에어프라이어</td><td class="n">1</td></tr><tr><td class="n">103</td><td>수분크림</td><td class="n">4</td></tr><tr><td class="n">104</td><td>선크림</td><td class="n">6</td></tr><tr><td class="n">105</td><td>패딩점퍼</td><td class="n">1</td></tr><tr><td class="n">106</td><td>요가매트</td><td class="n">0</td></tr></tbody></table></div>
+    <p>SUM은 대상이 전부 NULL이면 0이 아니라 NULL을 돌려줘서 IFNULL이 필요합니다. 비회원 주문(선크림 2개)도 판매 수량에 포함돼요.</p></div></div>
+  <div class="prac" data-id="7-4"><p class="q">등급별(없으면 ‘일반’) 고객 수와 그 고객들의 총 주문금액을 구하세요. 주문 없는 고객도 고객 수에 포함되고, 금액이 없으면 0.</p>
+    <div class="answer">
+<pre><code class="sql">SELECT IFNULL(c.grade, '일반')         AS grade_name,
+       COUNT(DISTINCT c.customer_id)  AS customer_cnt,
+       IFNULL(SUM(o.amount), 0)       AS sales
+FROM customers c
+LEFT JOIN orders o ON c.customer_id = o.customer_id
+GROUP BY grade_name
+ORDER BY sales DESC;</code></pre><div class="rt"><table><caption>결과 <span>(3행)</span></caption><thead><tr><th>grade_name</th><th>customer_cnt</th><th>sales</th></tr></thead><tbody><tr><td>VIP</td><td class="n">2</td><td class="n">723000</td></tr><tr><td>GOLD</td><td class="n">2</td><td class="n">487000</td></tr><tr><td>일반</td><td class="n">1</td><td class="n">0</td></tr></tbody></table></div>
+    <p>조인으로 고객 행이 주문 수만큼 복제되므로 고객 수는 반드시 COUNT(DISTINCT).</p></div></div>
+  <div class="prac" data-id="7-5"><p class="q">모든 고객의 이름과 <b>9월</b> 주문 건수를 조회하세요. 9월 주문이 없는 고객도 0으로 나와야 합니다.</p>
+    <div class="answer">
+<pre><code class="sql">SELECT c.name, COUNT(o.order_id) AS sep_orders
+FROM customers c
+LEFT JOIN orders o
+       ON c.customer_id = o.customer_id
+      AND o.order_date &gt;= '2026-09-01'
+      AND o.order_date &lt;  '2026-10-01'
+GROUP BY c.customer_id, c.name
+ORDER BY c.customer_id;</code></pre><div class="rt"><table><caption>결과 <span>(5행)</span></caption><thead><tr><th>name</th><th>sep_orders</th></tr></thead><tbody><tr><td>김하늘</td><td class="n">3</td></tr><tr><td>이도윤</td><td class="n">1</td></tr><tr><td>박서연</td><td class="n">1</td></tr><tr><td>최준호</td><td class="n">0</td></tr><tr><td>정예린</td><td class="n">0</td></tr></tbody></table></div>
+    <p>날짜 조건을 WHERE에 두면 최준호(주문 없음)와 정예린(10월에만 주문)이 통째로 사라집니다. 이 장의 핵심 함정이에요.</p></div></div>
+</section>
+
+<!-- ================= 08 ================= -->
+<section class="ch" id="ch8">
+  <div class="ch-head"><span class="num">08</span><h2>서브쿼리</h2></div>
+  <p class="lede">쿼리 안의 쿼리. 어디에 쓰이고 몇 행·몇 열을 돌려주느냐에 따라 이름과 규칙이 달라집니다.</p>
+
+  <h3>스칼라 서브쿼리: 값 하나(1행 1열)</h3>
+<pre><code class="sql">SELECT product_name, price
+FROM products
+WHERE price &gt; (SELECT AVG(price) FROM products);</code></pre><div class="rt"><table><caption>평균 가격(124333.33)보다 비싼 상품 <span>(3행)</span></caption><thead><tr><th>product_name</th><th>price</th></tr></thead><tbody><tr><td>무선청소기</td><td class="n">320000</td></tr><tr><td>에어프라이어</td><td class="n">129000</td></tr><tr><td>패딩점퍼</td><td class="n">189000</td></tr></tbody></table></div>
+<pre><code class="sql">SELECT product_name, price,
+       ROUND(price - (SELECT AVG(price) FROM products)) AS diff_from_avg
+FROM products
+ORDER BY price DESC;</code></pre><div class="rt"><table><caption>SELECT절에서도 사용 가능 <span>(6행)</span></caption><thead><tr><th>product_name</th><th>price</th><th>diff_from_avg</th></tr></thead><tbody><tr><td>무선청소기</td><td class="n">320000</td><td class="n">195667</td></tr><tr><td>패딩점퍼</td><td class="n">189000</td><td class="n">64667</td></tr><tr><td>에어프라이어</td><td class="n">129000</td><td class="n">4667</td></tr><tr><td>요가매트</td><td class="n">45000</td><td class="n">-79333</td></tr><tr><td>수분크림</td><td class="n">38000</td><td class="n">-86333</td></tr><tr><td>선크림</td><td class="n">25000</td><td class="n">-99333</td></tr></tbody></table></div>
+<pre><code class="sql">SELECT product_name
+FROM products
+WHERE price = (SELECT price FROM products WHERE category = '가전');</code></pre><div class="err"><b>ERROR 1242</b> Subquery returns more than 1 row</div>
+  <p><code class="i">=</code>, <code class="i">&gt;</code> 뒤의 서브쿼리가 2행 이상을 돌려주면 에러. 여러 행이면 IN을 씁니다.</p>
+
+  <h3>IN / EXISTS: 여러 행과 비교</h3>
+<pre><code class="sql">SELECT name
+FROM customers
+WHERE customer_id IN (
+  SELECT o.customer_id
+  FROM orders o
+  JOIN products p ON o.product_id = p.product_id
+  WHERE p.category = '가전'
+);</code></pre><div class="rt"><table><caption>가전을 산 적이 있는 고객 (IN) <span>(3행)</span></caption><thead><tr><th>name</th></tr></thead><tbody><tr><td>김하늘</td></tr><tr><td>이도윤</td></tr><tr><td>정예린</td></tr></tbody></table></div>
+<pre><code class="sql">SELECT c.name
+FROM customers c
+WHERE EXISTS (
+  SELECT 1                               -- 무엇을 SELECT하든 상관없음. 행이 있느냐만 봄
+  FROM orders o
+  JOIN products p ON o.product_id = p.product_id
+  WHERE p.category = '가전'
+    AND o.customer_id = c.customer_id    -- 바깥 행과 연결
+);</code></pre><div class="rt"><table><caption>같은 결과 (EXISTS) <span>(3행)</span></caption><thead><tr><th>name</th></tr></thead><tbody><tr><td>김하늘</td></tr><tr><td>이도윤</td></tr><tr><td>정예린</td></tr></tbody></table></div>
+
+  <h3>상관 서브쿼리: 바깥 행마다 다시 계산</h3>
+<pre><code class="sql">SELECT o.customer_id, o.order_id, o.amount
+FROM orders o
+WHERE o.amount = (
+  SELECT MAX(o2.amount)
+  FROM orders o2
+  WHERE o2.customer_id = o.customer_id   -- 바깥 o의 고객과 같은 고객만
+)
+ORDER BY o.customer_id;</code></pre><div class="rt"><table><caption>고객별 최고 금액 주문 <span>(4행)</span></caption><thead><tr><th>customer_id</th><th>order_id</th><th>amount</th></tr></thead><tbody><tr><td class="n">1</td><td class="n">1</td><td class="n">320000</td></tr><tr><td class="n">2</td><td class="n">6</td><td class="n">129000</td></tr><tr><td class="n">3</td><td class="n">8</td><td class="n">189000</td></tr><tr><td class="n">5</td><td class="n">9</td><td class="n">320000</td></tr></tbody></table></div>
+  <p>비회원 주문 7번은 <code class="i">o2.customer_id = NULL</code>이 되어 MAX가 NULL → 빠집니다. 안쪽에서 바깥 테이블을 참조하므로 바깥과 안쪽 별칭을 다르게(o, o2) 짓는 게 필수예요.</p>
+
+  <h3>인라인 뷰: FROM절의 서브쿼리</h3>
+<pre><code class="sql">SELECT AVG(total) AS avg_customer_total
+FROM (
+  SELECT customer_id, SUM(amount) AS total
+  FROM orders
+  WHERE customer_id IS NOT NULL
+  GROUP BY customer_id
+) t;                    -- 별칭 필수</code></pre><div class="rt"><table><caption>회원 1인당 평균 구매액 <span>(1행)</span></caption><thead><tr><th>avg_customer_total</th></tr></thead><tbody><tr><td class="n">302500.0000</td></tr></tbody></table></div>
+<pre><code class="sql">SELECT AVG(total)
+FROM (SELECT customer_id, SUM(amount) AS total FROM orders GROUP BY customer_id);</code></pre><div class="err"><b>ERROR 1248</b> Every derived table must have its own alias</div>
+
+  <h3>NOT IN과 NULL 함정</h3>
+  <p>“주문한 적 없는 고객”을 NOT IN으로 구해 봅시다. 최준호가 나와야 하는데…</p>
+<pre><code class="sql">SELECT name
+FROM customers
+WHERE customer_id NOT IN (SELECT customer_id FROM orders);</code></pre><div class="rt"><table><caption>0행! <span>(0행)</span></caption><thead><tr><th>name</th></tr></thead><tbody><tr><td class="empty" colspan="1">결과 없음 (0행)</td></tr></tbody></table></div>
+  <p>서브쿼리 결과에 비회원 주문의 NULL이 섞여 있기 때문입니다. <code class="i">4 NOT IN (1, 3, NULL, …)</code>은 <code class="i">4 != 1 AND 4 != 3 AND 4 != NULL …</code>인데, <code class="i">4 != NULL</code>이 NULL이라 전체가 참이 될 수 없어요.</p>
+  <div class="pair">
+<pre><code class="sql">SELECT name
+FROM customers
+WHERE customer_id NOT IN (
+  SELECT customer_id FROM orders
+  WHERE customer_id IS NOT NULL
+);</code></pre><div class="rt"><table><caption>해결 1: NULL 제거 <span>(1행)</span></caption><thead><tr><th>name</th></tr></thead><tbody><tr><td>최준호</td></tr></tbody></table></div>
+<pre><code class="sql">SELECT c.name
+FROM customers c
+WHERE NOT EXISTS (
+  SELECT 1 FROM orders o
+  WHERE o.customer_id = c.customer_id
+);</code></pre><div class="rt"><table><caption>해결 2: NOT EXISTS (권장) <span>(1행)</span></caption><thead><tr><th>name</th></tr></thead><tbody><tr><td>최준호</td></tr></tbody></table></div>
+  </div>
+
+  <div class="trap"><div class="t">함정</div>
+    <p><b>NOT IN 서브쿼리에 NULL이 하나라도 있으면 결과는 0행</b>. 에러도 안 나서 알아채기 어렵습니다. 부정 조건은 NOT EXISTS나 LEFT JOIN … IS NULL이 안전해요. (IN은 NULL이 있어도 문제 없음.)</p>
+    <p>FROM절 서브쿼리(파생 테이블)에는 별칭이 필수입니다.</p>
+    <p>단일 값 비교(<code class="i">=</code>) 서브쿼리가 여러 행을 돌려주면 에러. 데이터가 바뀌면 갑자기 터질 수 있으니 MAX/MIN이나 IN으로.</p>
+    <p>서브쿼리가 두 단계 이상 중첩되면 WITH절로 바꾸세요. 읽기도, 고치기도 훨씬 쉽습니다.</p>
+  </div>
+
+  <div class="prac" data-id="8-1"><p class="q">평균 가격보다 비싼 상품의 이름과 가격을 조회하세요.</p>
+    <div class="answer">
+<pre><code class="sql">SELECT product_name, price
+FROM products
+WHERE price &gt; (SELECT AVG(price) FROM products)
+ORDER BY price DESC;</code></pre><div class="rt"><table><caption>결과 <span>(3행)</span></caption><thead><tr><th>product_name</th><th>price</th></tr></thead><tbody><tr><td>무선청소기</td><td class="n">320000</td></tr><tr><td>패딩점퍼</td><td class="n">189000</td></tr><tr><td>에어프라이어</td><td class="n">129000</td></tr></tbody></table></div></div></div>
+  <div class="prac" data-id="8-2"><p class="q">뷰티 상품을 한 번이라도 산 고객의 이름을 IN을 사용해 조회하세요.</p>
+    <div class="answer">
+<pre><code class="sql">SELECT name
+FROM customers
+WHERE customer_id IN (
+  SELECT o.customer_id
+  FROM orders o
+  JOIN products p ON o.product_id = p.product_id
+  WHERE p.category = '뷰티'
+)
+ORDER BY customer_id;</code></pre><div class="rt"><table><caption>결과 <span>(3행)</span></caption><thead><tr><th>name</th></tr></thead><tbody><tr><td>김하늘</td></tr><tr><td>이도윤</td></tr><tr><td>박서연</td></tr></tbody></table></div>
+    <p>서브쿼리에 같은 고객이 여러 번 나와도 IN은 “있느냐”만 보므로 결과가 중복되지 않습니다. JOIN으로 풀면 DISTINCT가 필요해요.</p></div></div>
+  <div class="prac" data-id="8-3"><p class="q">각 회원의 가장 최근 주문(customer_id, order_id, order_date)을 상관 서브쿼리로 조회하세요.</p>
+    <div class="answer">
+<pre><code class="sql">SELECT o.customer_id, o.order_id, o.order_date
+FROM orders o
+WHERE o.order_date = (
+  SELECT MAX(o2.order_date)
+  FROM orders o2
+  WHERE o2.customer_id = o.customer_id
+)
+ORDER BY o.customer_id;</code></pre><div class="rt"><table><caption>결과 <span>(4행)</span></caption><thead><tr><th>customer_id</th><th>order_id</th><th>order_date</th></tr></thead><tbody><tr><td class="n">1</td><td class="n">5</td><td>2026-09-03</td></tr><tr><td class="n">2</td><td class="n">10</td><td>2026-10-05</td></tr><tr><td class="n">3</td><td class="n">8</td><td>2026-09-21</td></tr><tr><td class="n">5</td><td class="n">9</td><td>2026-10-05</td></tr></tbody></table></div>
+    <p>만약 한 고객이 같은 날 두 건을 주문했다면 두 건 다 나옵니다. 정확히 1건이 필요하면 ROW_NUMBER(12장 “키별 최신 1건”).</p></div></div>
+  <div class="prac" data-id="8-4"><p class="q"><b>자기 카테고리의</b> 평균 가격보다 비싼 상품의 카테고리, 상품명, 가격을 조회하세요.</p>
+    <div class="answer">
+<pre><code class="sql">SELECT p.category, p.product_name, p.price
+FROM products p
+WHERE p.price &gt; (
+  SELECT AVG(p2.price)
+  FROM products p2
+  WHERE p2.category = p.category
+)
+ORDER BY p.category;</code></pre><div class="rt"><table><caption>결과 <span>(2행)</span></caption><thead><tr><th>category</th><th>product_name</th><th>price</th></tr></thead><tbody><tr><td>가전</td><td>무선청소기</td><td class="n">320000</td></tr><tr><td>뷰티</td><td>수분크림</td><td class="n">38000</td></tr></tbody></table></div>
+    <p>가전 평균 224500, 뷰티 평균 31500. 상품이 하나뿐인 패션·생활은 자기 자신이 평균이라 “보다 비싼”에 해당하지 않아요. 윈도우 함수로는 <code class="i">AVG(price) OVER (PARTITION BY category)</code>를 계산해 바깥에서 비교합니다.</p></div></div>
+</section>
+
+<!-- ================= 09 ================= -->
+<section class="ch" id="ch9">
+  <div class="ch-head"><span class="num">09</span><h2>WITH절 (CTE)</h2></div>
+  <p class="lede">서브쿼리에 이름을 붙여 위에서부터 차례로 쌓는 방법. 복잡한 문제일수록 단계를 나누고, 단계마다 <code class="i">SELECT * FROM 단계명</code>으로 중간 결과를 확인하세요.</p>
+
+<pre><code class="sql">WITH customer_total AS (           -- 1단계: 회원별 총액
+  SELECT customer_id, SUM(amount) AS total
+  FROM orders
+  WHERE customer_id IS NOT NULL
+  GROUP BY customer_id
+),
+avg_total AS (                     -- 2단계: 앞 CTE를 다시 사용
+  SELECT AVG(total) AS avg_t FROM customer_total
+)
+SELECT c.name, ct.total, a.avg_t   -- 3단계: 평균보다 많이 산 회원
+FROM customer_total ct
+JOIN customers c ON ct.customer_id = c.customer_id
+CROSS JOIN avg_total a             -- 1행짜리라 CROSS JOIN으로 붙여도 행이 안 늘어남
+WHERE ct.total &gt; a.avg_t
+ORDER BY ct.total DESC;</code></pre><div class="rt"><table><caption>결과 <span>(2행)</span></caption><thead><tr><th>name</th><th>total</th><th>avg_t</th></tr></thead><tbody><tr><td>김하늘</td><td class="n">459000</td><td class="n">302500.0000</td></tr><tr><td>정예린</td><td class="n">320000</td><td class="n">302500.0000</td></tr></tbody></table></div>
+  <ul class="plain">
+    <li>WITH는 맨 앞에 <b>한 번만</b> 쓰고, 여러 CTE는 쉼표로 이어 붙입니다. 두 번째 CTE 앞에 WITH를 또 쓰면 에러.</li>
+    <li>뒤의 CTE는 앞의 CTE를 참조할 수 있습니다(반대는 불가).</li>
+    <li>마지막 CTE의 닫는 괄호 뒤에는 쉼표 없이 본 쿼리가 옵니다.</li>
+  </ul>
+
+  <h3>WITH RECURSIVE: 숫자·날짜 만들기</h3>
+<pre><code class="sql">WITH RECURSIVE nums AS (
+  SELECT 1 AS n               -- 앵커: 시작 행
+  UNION ALL
+  SELECT n + 1 FROM nums      -- 재귀: 직전 결과를 받아 다음 행 생성
+  WHERE n &lt; 5                 -- 종료 조건 (없으면 무한 반복 → 에러)
+)
+SELECT n FROM nums;</code></pre><div class="rt"><table><caption>결과 <span>(5행)</span></caption><thead><tr><th>n</th></tr></thead><tbody><tr><td class="n">1</td></tr><tr><td class="n">2</td></tr><tr><td class="n">3</td></tr><tr><td class="n">4</td></tr><tr><td class="n">5</td></tr></tbody></table></div>
+  <p>“주문이 없는 날도 0으로 표시”하라는 문제의 정석 풀이: 날짜 뼈대를 만들고 LEFT JOIN.</p>
+<pre><code class="sql">WITH RECURSIVE dates AS (
+  SELECT DATE('2026-09-01') AS dt
+  UNION ALL
+  SELECT dt + INTERVAL 1 DAY FROM dates
+  WHERE dt &lt; '2026-09-07'
+)
+SELECT d.dt,
+       COUNT(o.order_id)        AS order_cnt,
+       IFNULL(SUM(o.amount), 0) AS sales
+FROM dates d
+LEFT JOIN orders o ON o.order_date = d.dt
+GROUP BY d.dt
+ORDER BY d.dt;</code></pre><div class="rt"><table><caption>결과 <span>(7행)</span></caption><thead><tr><th>dt</th><th>order_cnt</th><th>sales</th></tr></thead><tbody><tr><td>2026-09-01</td><td class="n">1</td><td class="n">76000</td></tr><tr><td>2026-09-02</td><td class="n">1</td><td class="n">25000</td></tr><tr><td>2026-09-03</td><td class="n">2</td><td class="n">167000</td></tr><tr><td>2026-09-04</td><td class="n">0</td><td class="n">0</td></tr><tr><td>2026-09-05</td><td class="n">0</td><td class="n">0</td></tr><tr><td>2026-09-06</td><td class="n">0</td><td class="n">0</td></tr><tr><td>2026-09-07</td><td class="n">0</td><td class="n">0</td></tr></tbody></table></div>
+
+  <div class="trap"><div class="t">함정</div>
+    <p>재귀 CTE 컬럼의 타입과 길이는 <b>앵커 행</b>이 정합니다. 문자열을 늘려 가면 앵커 길이를 넘는 순간 에러가 나요.</p>
+<pre><code class="sql">WITH RECURSIVE s AS (
+  SELECT 'a' AS str
+  UNION ALL
+  SELECT CONCAT(str, 'a') FROM s WHERE CHAR_LENGTH(str) &lt; 3
+)
+SELECT * FROM s;</code></pre><div class="err"><b>ERROR 1406</b> Data too long for column &#x27;str&#x27; at row 1</div>
+    <p>앵커에서 <code class="i">CAST('a' AS CHAR(10))</code>처럼 넉넉하게 잡으면 됩니다. 날짜는 <code class="i">DATE('2026-09-01')</code>이나 <code class="i">CAST(… AS DATE)</code>로 타입을 명확히 하세요.</p>
+    <p>재귀는 기본 1000단계까지만(cte_max_recursion_depth). 날짜 범위가 3년 가까이 되면 걸립니다.</p>
+    <p>order_date가 DATETIME이면 <code class="i">ON DATE(o.order_dt) = d.dt</code>로 맞춰야 조인됩니다.</p>
+  </div>
+
+  <div class="prac" data-id="9-1"><p class="q">WITH로 회원별 총 주문금액을 구한 뒤, 총액 상위 2명의 이름과 총액을 조회하세요.</p>
+    <div class="answer">
+<pre><code class="sql">WITH customer_total AS (
+  SELECT customer_id, SUM(amount) AS total
+  FROM orders
+  WHERE customer_id IS NOT NULL
+  GROUP BY customer_id
+)
+SELECT c.name, ct.total
+FROM customer_total ct
+JOIN customers c ON ct.customer_id = c.customer_id
+ORDER BY ct.total DESC
+LIMIT 2;</code></pre><div class="rt"><table><caption>결과 <span>(2행)</span></caption><thead><tr><th>name</th><th>total</th></tr></thead><tbody><tr><td>김하늘</td><td class="n">459000</td></tr><tr><td>정예린</td><td class="n">320000</td></tr></tbody></table></div></div></div>
+  <div class="prac" data-id="9-2"><p class="q">2026-09-01부터 2026-09-10까지 일자별 주문 건수를 구하세요. 주문 없는 날은 0으로 표시합니다.</p>
+    <div class="answer">
+<pre><code class="sql">WITH RECURSIVE dates AS (
+  SELECT DATE('2026-09-01') AS dt
+  UNION ALL
+  SELECT dt + INTERVAL 1 DAY FROM dates WHERE dt &lt; '2026-09-10'
+)
+SELECT d.dt, COUNT(o.order_id) AS order_cnt
+FROM dates d
+LEFT JOIN orders o ON o.order_date = d.dt
+GROUP BY d.dt
+ORDER BY d.dt;</code></pre><div class="rt"><table><caption>결과 <span>(10행)</span></caption><thead><tr><th>dt</th><th>order_cnt</th></tr></thead><tbody><tr><td>2026-09-01</td><td class="n">1</td></tr><tr><td>2026-09-02</td><td class="n">1</td></tr><tr><td>2026-09-03</td><td class="n">2</td></tr><tr><td>2026-09-04</td><td class="n">0</td></tr><tr><td>2026-09-05</td><td class="n">0</td></tr><tr><td>2026-09-06</td><td class="n">0</td></tr><tr><td>2026-09-07</td><td class="n">0</td></tr><tr><td>2026-09-08</td><td class="n">0</td></tr><tr><td>2026-09-09</td><td class="n">0</td></tr><tr><td>2026-09-10</td><td class="n">1</td></tr></tbody></table></div>
+    <p>COUNT(o.order_id)라서 IFNULL 없이도 0이 나옵니다. COUNT(*)로 쓰면 빈 날도 1이 돼요.</p></div></div>
+  <div class="prac" data-id="9-3"><p class="q">2026년 7월부터 10월까지 월별 매출을 구하세요. 주문이 없는 달(7월)도 0으로 나와야 합니다.</p>
+    <div class="answer">
+<pre><code class="sql">WITH RECURSIVE months AS (
+  SELECT DATE('2026-07-01') AS m
+  UNION ALL
+  SELECT m + INTERVAL 1 MONTH FROM months WHERE m &lt; '2026-10-01'
+)
+SELECT DATE_FORMAT(m.m, '%Y-%m')  AS ym,
+       IFNULL(SUM(o.amount), 0)   AS sales
+FROM months m
+LEFT JOIN orders o
+       ON o.order_date &gt;= m.m
+      AND o.order_date &lt;  m.m + INTERVAL 1 MONTH
+GROUP BY m.m
+ORDER BY m.m;</code></pre><div class="rt"><table><caption>결과 <span>(4행)</span></caption><thead><tr><th>ym</th><th>sales</th></tr></thead><tbody><tr><td>2026-07</td><td class="n">0</td></tr><tr><td>2026-08</td><td class="n">395000</td></tr><tr><td>2026-09</td><td class="n">507000</td></tr><tr><td>2026-10</td><td class="n">358000</td></tr></tbody></table></div>
+    <p>월 뼈대는 “매월 1일”로 만들고, 조인 조건을 범위로 겁니다. <code class="i">ON DATE_FORMAT(o.order_date, '%Y-%m') = DATE_FORMAT(m.m, '%Y-%m')</code>도 같은 결과.</p></div></div>
+</section>
+
+<!-- ================= 10 ================= -->
+<section class="ch" id="ch10">
+  <div class="ch-head"><span class="num">10</span><h2>윈도우 함수</h2></div>
+  <p class="lede">GROUP BY는 행을 접어 그룹당 1행을 남기지만, 윈도우 함수는 <b>행을 그대로 두고</b> 각 행 옆에 순위·누적합·이전 값 같은 계산을 붙입니다. 상급 문제의 대부분이 여기서 나와요.</p>
+
+<pre><code class="sql">함수() OVER (
+  PARTITION BY 그룹기준      -- 생략하면 전체가 한 그룹
+  ORDER BY 정렬기준          -- 순위·누적·LAG에 필요
+  ROWS BETWEEN ... AND ...   -- 계산 범위(프레임). 생략하면 기본값 (함정 2 참고)
+)</code></pre>
+
+  <h3>순위: ROW_NUMBER, RANK, DENSE_RANK</h3>
+<pre><code class="sql">SELECT order_id, amount,
+       ROW_NUMBER() OVER (ORDER BY amount DESC, order_id) AS row_num,
+       RANK()       OVER (ORDER BY amount DESC)           AS rnk,
+       DENSE_RANK() OVER (ORDER BY amount DESC)           AS dense_rnk
+FROM orders
+ORDER BY amount DESC, order_id;</code></pre><div class="rt"><table><caption>결과 <span>(10행)</span></caption><thead><tr><th>order_id</th><th>amount</th><th>row_num</th><th>rnk</th><th>dense_rnk</th></tr></thead><tbody><tr><td class="n">1</td><td class="n">320000</td><td class="n">1</td><td class="n">1</td><td class="n">1</td></tr><tr><td class="n">9</td><td class="n">320000</td><td class="n">2</td><td class="n">1</td><td class="n">1</td></tr><tr><td class="n">8</td><td class="n">189000</td><td class="n">3</td><td class="n">3</td><td class="n">2</td></tr><tr><td class="n">6</td><td class="n">129000</td><td class="n">4</td><td class="n">4</td><td class="n">3</td></tr><tr><td class="n">3</td><td class="n">76000</td><td class="n">5</td><td class="n">5</td><td class="n">4</td></tr><tr><td class="n">2</td><td class="n">75000</td><td class="n">6</td><td class="n">6</td><td class="n">5</td></tr><tr><td class="n">7</td><td class="n">50000</td><td class="n">7</td><td class="n">7</td><td class="n">6</td></tr><tr><td class="n">5</td><td class="n">38000</td><td class="n">8</td><td class="n">8</td><td class="n">7</td></tr><tr><td class="n">10</td><td class="n">38000</td><td class="n">9</td><td class="n">8</td><td class="n">7</td></tr><tr><td class="n">4</td><td class="n">25000</td><td class="n">10</td><td class="n">10</td><td class="n">8</td></tr></tbody></table></div>
+  <ul class="plain">
+    <li><b>ROW_NUMBER</b>: 동점이어도 1, 2, 3… 무조건 다른 번호. 동점끼리의 순서는 보장이 없으니 2차 기준(order_id)을 넣어 고정.</li>
+    <li><b>RANK</b>: 동점은 같은 순위, 다음 순위는 그만큼 건너뜀 (1, 1, <b>3</b>).</li>
+    <li><b>DENSE_RANK</b>: 동점은 같은 순위, 건너뛰지 않음 (1, 1, <b>2</b>).</li>
+  </ul>
+  <p>문제에 “공동 순위를 포함해 상위 3위까지”면 RANK(또는 “순위 3까지”의 의미에 따라 DENSE_RANK), “정확히 3개”면 ROW_NUMBER.</p>
+
+  <h3>PARTITION BY: 그룹 안에서 따로 계산</h3>
+<pre><code class="sql">SELECT customer_id, order_date, amount,
+       ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY order_date) AS seq,
+       SUM(amount)  OVER (PARTITION BY customer_id ORDER BY order_date) AS cum_amount,
+       SUM(amount)  OVER (PARTITION BY customer_id)                     AS customer_total
+FROM orders
+WHERE customer_id IS NOT NULL
+ORDER BY customer_id, order_date;</code></pre><div class="rt"><table><caption>결과 <span>(9행)</span></caption><thead><tr><th>customer_id</th><th>order_date</th><th>amount</th><th>seq</th><th>cum_amount</th><th>customer_total</th></tr></thead><tbody><tr><td class="n">1</td><td>2026-08-14</td><td class="n">320000</td><td class="n">1</td><td class="n">320000</td><td class="n">459000</td></tr><tr><td class="n">1</td><td>2026-09-01</td><td class="n">76000</td><td class="n">2</td><td class="n">396000</td><td class="n">459000</td></tr><tr><td class="n">1</td><td>2026-09-02</td><td class="n">25000</td><td class="n">3</td><td class="n">421000</td><td class="n">459000</td></tr><tr><td class="n">1</td><td>2026-09-03</td><td class="n">38000</td><td class="n">4</td><td class="n">459000</td><td class="n">459000</td></tr><tr><td class="n">2</td><td>2026-09-03</td><td class="n">129000</td><td class="n">1</td><td class="n">129000</td><td class="n">167000</td></tr><tr><td class="n">2</td><td>2026-10-05</td><td class="n">38000</td><td class="n">2</td><td class="n">167000</td><td class="n">167000</td></tr><tr><td class="n">3</td><td>2026-08-20</td><td class="n">75000</td><td class="n">1</td><td class="n">75000</td><td class="n">264000</td></tr><tr><td class="n">3</td><td>2026-09-21</td><td class="n">189000</td><td class="n">2</td><td class="n">264000</td><td class="n">264000</td></tr><tr><td class="n">5</td><td>2026-10-05</td><td class="n">320000</td><td class="n">1</td><td class="n">320000</td><td class="n">320000</td></tr></tbody></table></div>
+  <p>ORDER BY가 있으면 “처음부터 현재 행까지” 누적, 없으면 파티션 전체 합계입니다. GROUP BY와 달리 9행이 그대로 남아 있어요.</p>
+
+  <h3>LAG / LEAD: 이전·다음 행의 값</h3>
+<pre><code class="sql">SELECT customer_id, order_date, amount,
+       LAG(order_date)  OVER w                          AS prev_date,
+       DATEDIFF(order_date, LAG(order_date) OVER w)     AS gap_days,
+       LEAD(amount, 1, 0) OVER w                        AS next_amount
+FROM orders
+WHERE customer_id IS NOT NULL
+WINDOW w AS (PARTITION BY customer_id ORDER BY order_date)   -- 같은 OVER를 이름 붙여 재사용
+ORDER BY customer_id, order_date;</code></pre><div class="rt"><table><caption>결과 <span>(9행)</span></caption><thead><tr><th>customer_id</th><th>order_date</th><th>amount</th><th>prev_date</th><th>gap_days</th><th>next_amount</th></tr></thead><tbody><tr><td class="n">1</td><td>2026-08-14</td><td class="n">320000</td><td class="null">NULL</td><td class="null">NULL</td><td class="n">76000</td></tr><tr><td class="n">1</td><td>2026-09-01</td><td class="n">76000</td><td>2026-08-14</td><td class="n">18</td><td class="n">25000</td></tr><tr><td class="n">1</td><td>2026-09-02</td><td class="n">25000</td><td>2026-09-01</td><td class="n">1</td><td class="n">38000</td></tr><tr><td class="n">1</td><td>2026-09-03</td><td class="n">38000</td><td>2026-09-02</td><td class="n">1</td><td class="n">0</td></tr><tr><td class="n">2</td><td>2026-09-03</td><td class="n">129000</td><td class="null">NULL</td><td class="null">NULL</td><td class="n">38000</td></tr><tr><td class="n">2</td><td>2026-10-05</td><td class="n">38000</td><td>2026-09-03</td><td class="n">32</td><td class="n">0</td></tr><tr><td class="n">3</td><td>2026-08-20</td><td class="n">75000</td><td class="null">NULL</td><td class="null">NULL</td><td class="n">189000</td></tr><tr><td class="n">3</td><td>2026-09-21</td><td class="n">189000</td><td>2026-08-20</td><td class="n">32</td><td class="n">0</td></tr><tr><td class="n">5</td><td>2026-10-05</td><td class="n">320000</td><td class="null">NULL</td><td class="null">NULL</td><td class="n">0</td></tr></tbody></table></div>
+  <p><code class="i">LAG(컬럼, n, 기본값)</code>: n행 전 값(기본 n=1), 없으면 기본값(기본 NULL). 위에서 LEAD의 기본값을 0으로 줘서 마지막 주문의 next_amount가 0입니다.</p>
+
+  <h3>집계 윈도우: 비중</h3>
+<pre><code class="sql">SELECT p.category,
+       SUM(o.amount)                                           AS sales,
+       SUM(SUM(o.amount)) OVER ()                              AS grand_total,
+       ROUND(SUM(o.amount) / SUM(SUM(o.amount)) OVER () * 100, 1) AS pct
+FROM orders o
+JOIN products p ON o.product_id = p.product_id
+GROUP BY p.category
+ORDER BY sales DESC;</code></pre><div class="rt"><table><caption>결과 <span>(3행)</span></caption><thead><tr><th>category</th><th>sales</th><th>grand_total</th><th>pct</th></tr></thead><tbody><tr><td>가전</td><td class="n">769000</td><td class="n">1260000</td><td class="n">61.0</td></tr><tr><td>뷰티</td><td class="n">302000</td><td class="n">1260000</td><td class="n">24.0</td></tr><tr><td>패션</td><td class="n">189000</td><td class="n">1260000</td><td class="n">15.0</td></tr></tbody></table></div>
+  <p><code class="i">SUM(SUM(o.amount)) OVER ()</code>: 안쪽 SUM은 GROUP BY 집계, 바깥 SUM … OVER()는 그 결과 전체의 합. 윈도우 함수가 GROUP BY 이후(SELECT 단계)에 계산되기 때문에 가능한 문법입니다. 헷갈리면 WITH로 먼저 집계하고 바깥에서 <code class="i">SUM(sales) OVER ()</code>를 써도 됩니다.</p>
+
+  <h3>이동평균과 프레임: ROWS vs RANGE</h3>
+<pre><code class="sql">WITH daily AS (
+  SELECT order_date, SUM(amount) AS sales
+  FROM orders
+  GROUP BY order_date
+)
+SELECT order_date, sales,
+       ROUND(AVG(sales) OVER (ORDER BY order_date
+             ROWS BETWEEN 2 PRECEDING AND CURRENT ROW))  AS ma_3rows,  -- 최근 3개 '행'
+       ROUND(AVG(sales) OVER (ORDER BY order_date
+             RANGE BETWEEN INTERVAL 2 DAY PRECEDING AND CURRENT ROW)) AS ma_3days  -- 최근 3'일'
+FROM daily
+ORDER BY order_date;</code></pre><div class="rt"><table><caption>결과 <span>(8행)</span></caption><thead><tr><th>order_date</th><th>sales</th><th>ma_3rows</th><th>ma_3days</th></tr></thead><tbody><tr><td>2026-08-14</td><td class="n">320000</td><td class="n">320000</td><td class="n">320000</td></tr><tr><td>2026-08-20</td><td class="n">75000</td><td class="n">197500</td><td class="n">75000</td></tr><tr><td>2026-09-01</td><td class="n">76000</td><td class="n">157000</td><td class="n">76000</td></tr><tr><td>2026-09-02</td><td class="n">25000</td><td class="n">58667</td><td class="n">50500</td></tr><tr><td>2026-09-03</td><td class="n">167000</td><td class="n">89333</td><td class="n">89333</td></tr><tr><td>2026-09-10</td><td class="n">50000</td><td class="n">80667</td><td class="n">50000</td></tr><tr><td>2026-09-21</td><td class="n">189000</td><td class="n">135333</td><td class="n">189000</td></tr><tr><td>2026-10-05</td><td class="n">358000</td><td class="n">199000</td><td class="n">358000</td></tr></tbody></table></div>
+  <p><b>ROWS</b>는 행 개수로, <b>RANGE</b>는 정렬 값의 범위로 프레임을 잡습니다. 9월 1일의 ma_3rows는 8월 행까지 끌어와 평균을 냈지만, ma_3days는 8/30~9/1 사이에 다른 행이 없어 자기 값만 씁니다. “최근 7일 이동평균”처럼 <b>달력 기준</b>이면 RANGE + INTERVAL, 또는 빈 날짜를 채운 뒤 ROWS.</p>
+  <p>프레임 표현: <code class="i">UNBOUNDED PRECEDING</code>(처음부터), <code class="i">n PRECEDING</code>, <code class="i">CURRENT ROW</code>, <code class="i">n FOLLOWING</code>, <code class="i">UNBOUNDED FOLLOWING</code>(끝까지).</p>
+
+  <h3>그 밖의 윈도우 함수</h3>
+<pre><code class="sql">SELECT product_name, price,
+       NTILE(3)       OVER (ORDER BY price) AS tile3,      -- 3등분 그룹 번호
+       PERCENT_RANK() OVER (ORDER BY price) AS pct_rank,   -- (순위-1)/(행수-1)
+       CUME_DIST()    OVER (ORDER BY price) AS cume,       -- 나보다 작거나 같은 비율
+       FIRST_VALUE(product_name) OVER (ORDER BY price)     AS cheapest
+FROM products
+ORDER BY price;</code></pre><div class="rt"><table><caption>결과 <span>(6행)</span></caption><thead><tr><th>product_name</th><th>price</th><th>tile3</th><th>pct_rank</th><th>cume</th><th>cheapest</th></tr></thead><tbody><tr><td>선크림</td><td class="n">25000</td><td class="n">1</td><td class="n">0</td><td class="n">0.16666666666666666</td><td>선크림</td></tr><tr><td>수분크림</td><td class="n">38000</td><td class="n">1</td><td class="n">0.2</td><td class="n">0.3333333333333333</td><td>선크림</td></tr><tr><td>요가매트</td><td class="n">45000</td><td class="n">2</td><td class="n">0.4</td><td class="n">0.5</td><td>선크림</td></tr><tr><td>에어프라이어</td><td class="n">129000</td><td class="n">2</td><td class="n">0.6</td><td class="n">0.6666666666666666</td><td>선크림</td></tr><tr><td>패딩점퍼</td><td class="n">189000</td><td class="n">3</td><td class="n">0.8</td><td class="n">0.8333333333333334</td><td>선크림</td></tr><tr><td>무선청소기</td><td class="n">320000</td><td class="n">3</td><td class="n">1</td><td class="n">1</td><td>선크림</td></tr></tbody></table></div>
+
+  <div class="trap"><div class="t">함정 1: 윈도우 함수는 WHERE에서 못 쓴다</div>
+    <p>“고객별 첫 주문만”, “순위 3위까지” 같은 문제는 반드시 한 번 감싸서 바깥에서 거릅니다(맨 앞 실행 순서 ④). HAVING에서도 안 돼요.</p>
+  </div>
+  <div class="trap"><div class="t">함정 2: ORDER BY만 쓴 누적합은 동점 행을 한꺼번에 더한다</div>
+    <p>OVER에 ORDER BY가 있고 프레임을 안 쓰면 기본 프레임이 <code class="i">RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</code>입니다. RANGE는 정렬 값이 <b>같은 행(peer)을 한 덩어리</b>로 봐요.</p>
+<pre><code class="sql">SELECT order_id, order_date, amount,
+       SUM(amount) OVER (ORDER BY order_date)            AS cum_range,
+       SUM(amount) OVER (ORDER BY order_date, order_id
+                         ROWS BETWEEN UNBOUNDED PRECEDING
+                                  AND CURRENT ROW)       AS cum_rows
+FROM orders
+ORDER BY order_date, order_id;</code></pre><div class="rt"><table><caption>결과 <span>(10행)</span></caption><thead><tr><th>order_id</th><th>order_date</th><th>amount</th><th>cum_range</th><th>cum_rows</th></tr></thead><tbody><tr><td class="n">1</td><td>2026-08-14</td><td class="n">320000</td><td class="n">320000</td><td class="n">320000</td></tr><tr><td class="n">2</td><td>2026-08-20</td><td class="n">75000</td><td class="n">395000</td><td class="n">395000</td></tr><tr><td class="n">3</td><td>2026-09-01</td><td class="n">76000</td><td class="n">471000</td><td class="n">471000</td></tr><tr><td class="n">4</td><td>2026-09-02</td><td class="n">25000</td><td class="n">496000</td><td class="n">496000</td></tr><tr><td class="n">5</td><td>2026-09-03</td><td class="n">38000</td><td class="n">663000</td><td class="n">534000</td></tr><tr><td class="n">6</td><td>2026-09-03</td><td class="n">129000</td><td class="n">663000</td><td class="n">663000</td></tr><tr><td class="n">7</td><td>2026-09-10</td><td class="n">50000</td><td class="n">713000</td><td class="n">713000</td></tr><tr><td class="n">8</td><td>2026-09-21</td><td class="n">189000</td><td class="n">902000</td><td class="n">902000</td></tr><tr><td class="n">9</td><td>2026-10-05</td><td class="n">320000</td><td class="n">1260000</td><td class="n">1222000</td></tr><tr><td class="n">10</td><td>2026-10-05</td><td class="n">38000</td><td class="n">1260000</td><td class="n">1260000</td></tr></tbody></table></div>
+    <p>9/3 주문 5·6번, 10/5 주문 9·10번은 cum_range가 같습니다. “주문별 누적”이면 ROWS + 유일한 2차 정렬, “날짜별 누적”이면 먼저 날짜로 GROUP BY 한 다음 누적하는 게 깔끔합니다.</p>
+  </div>
+  <div class="trap"><div class="t">함정 3: LAST_VALUE는 그냥 쓰면 현재 행 값이 나온다</div>
+    <p>기본 프레임이 “현재 행까지”라서, 그 범위의 마지막 = 현재 행입니다.</p>
+<pre><code class="sql">SELECT customer_id, order_date, amount,
+       LAST_VALUE(amount) OVER (PARTITION BY customer_id ORDER BY order_date) AS last_wrong,
+       LAST_VALUE(amount) OVER (PARTITION BY customer_id ORDER BY order_date
+                                ROWS BETWEEN UNBOUNDED PRECEDING
+                                         AND UNBOUNDED FOLLOWING)            AS last_right
+FROM orders
+WHERE customer_id IN (1, 3)
+ORDER BY customer_id, order_date;</code></pre><div class="rt"><table><caption>결과 <span>(6행)</span></caption><thead><tr><th>customer_id</th><th>order_date</th><th>amount</th><th>last_wrong</th><th>last_right</th></tr></thead><tbody><tr><td class="n">1</td><td>2026-08-14</td><td class="n">320000</td><td class="n">320000</td><td class="n">38000</td></tr><tr><td class="n">1</td><td>2026-09-01</td><td class="n">76000</td><td class="n">76000</td><td class="n">38000</td></tr><tr><td class="n">1</td><td>2026-09-02</td><td class="n">25000</td><td class="n">25000</td><td class="n">38000</td></tr><tr><td class="n">1</td><td>2026-09-03</td><td class="n">38000</td><td class="n">38000</td><td class="n">38000</td></tr><tr><td class="n">3</td><td>2026-08-20</td><td class="n">75000</td><td class="n">75000</td><td class="n">189000</td></tr><tr><td class="n">3</td><td>2026-09-21</td><td class="n">189000</td><td class="n">189000</td><td class="n">189000</td></tr></tbody></table></div>
+    <p>프레임을 끝까지 넓히거나, 정렬을 뒤집어 <code class="i">FIRST_VALUE(amount) OVER (PARTITION BY customer_id ORDER BY order_date DESC)</code>를 쓰세요. FIRST_VALUE는 기본 프레임에서도 정상 동작합니다.</p>
+  </div>
+
+  <div class="prac" data-id="10-1"><p class="q">상품을 가격이 높은 순으로 순위를 매기세요. 동점이면 같은 순위, 다음 순위는 건너뛰지 않습니다.</p>
+    <div class="answer">
+<pre><code class="sql">SELECT product_name, price,
+       DENSE_RANK() OVER (ORDER BY price DESC) AS price_rank
+FROM products
+ORDER BY price_rank;</code></pre><div class="rt"><table><caption>결과 <span>(6행)</span></caption><thead><tr><th>product_name</th><th>price</th><th>price_rank</th></tr></thead><tbody><tr><td>무선청소기</td><td class="n">320000</td><td class="n">1</td></tr><tr><td>패딩점퍼</td><td class="n">189000</td><td class="n">2</td></tr><tr><td>에어프라이어</td><td class="n">129000</td><td class="n">3</td></tr><tr><td>요가매트</td><td class="n">45000</td><td class="n">4</td></tr><tr><td>수분크림</td><td class="n">38000</td><td class="n">5</td></tr><tr><td>선크림</td><td class="n">25000</td><td class="n">6</td></tr></tbody></table></div></div></div>
+  <div class="prac" data-id="10-2"><p class="q">회원별 첫 구매 상품명을 조회하세요. (같은 날 여러 건이면 order_id가 작은 것)</p>
+    <div class="answer">
+<pre><code class="sql">WITH ranked AS (
+  SELECT o.customer_id, p.product_name,
+         ROW_NUMBER() OVER (PARTITION BY o.customer_id
+                            ORDER BY o.order_date, o.order_id) AS rn
+  FROM orders o
+  JOIN products p ON o.product_id = p.product_id
+  WHERE o.customer_id IS NOT NULL
+)
+SELECT customer_id, product_name
+FROM ranked
+WHERE rn = 1
+ORDER BY customer_id;</code></pre><div class="rt"><table><caption>결과 <span>(4행)</span></caption><thead><tr><th>customer_id</th><th>product_name</th></tr></thead><tbody><tr><td class="n">1</td><td>무선청소기</td></tr><tr><td class="n">2</td><td>에어프라이어</td></tr><tr><td class="n">3</td><td>선크림</td></tr><tr><td class="n">5</td><td>무선청소기</td></tr></tbody></table></div></div></div>
+  <div class="prac" data-id="10-3"><p class="q">회원별로 각 주문이 직전 주문보다 금액이 얼마나 늘었는지(diff)를 구하세요. 첫 주문은 NULL.</p>
+    <div class="answer">
+<pre><code class="sql">SELECT customer_id, order_date, amount,
+       amount - LAG(amount) OVER (PARTITION BY customer_id
+                                  ORDER BY order_date, order_id) AS diff
+FROM orders
+WHERE customer_id IS NOT NULL
+ORDER BY customer_id, order_date;</code></pre><div class="rt"><table><caption>결과 <span>(9행)</span></caption><thead><tr><th>customer_id</th><th>order_date</th><th>amount</th><th>diff</th></tr></thead><tbody><tr><td class="n">1</td><td>2026-08-14</td><td class="n">320000</td><td class="null">NULL</td></tr><tr><td class="n">1</td><td>2026-09-01</td><td class="n">76000</td><td class="n">-244000</td></tr><tr><td class="n">1</td><td>2026-09-02</td><td class="n">25000</td><td class="n">-51000</td></tr><tr><td class="n">1</td><td>2026-09-03</td><td class="n">38000</td><td class="n">13000</td></tr><tr><td class="n">2</td><td>2026-09-03</td><td class="n">129000</td><td class="null">NULL</td></tr><tr><td class="n">2</td><td>2026-10-05</td><td class="n">38000</td><td class="n">-91000</td></tr><tr><td class="n">3</td><td>2026-08-20</td><td class="n">75000</td><td class="null">NULL</td></tr><tr><td class="n">3</td><td>2026-09-21</td><td class="n">189000</td><td class="n">114000</td></tr><tr><td class="n">5</td><td>2026-10-05</td><td class="n">320000</td><td class="null">NULL</td></tr></tbody></table></div></div></div>
+  <div class="prac" data-id="10-4"><p class="q">날짜별 매출과, 날짜 순으로 누적한 누적 매출을 구하세요.</p>
+    <div class="answer">
+<pre><code class="sql">WITH daily AS (
+  SELECT order_date, SUM(amount) AS sales
+  FROM orders
+  GROUP BY order_date
+)
+SELECT order_date, sales,
+       SUM(sales) OVER (ORDER BY order_date) AS cum_sales
+FROM daily
+ORDER BY order_date;</code></pre><div class="rt"><table><caption>결과 <span>(8행)</span></caption><thead><tr><th>order_date</th><th>sales</th><th>cum_sales</th></tr></thead><tbody><tr><td>2026-08-14</td><td class="n">320000</td><td class="n">320000</td></tr><tr><td>2026-08-20</td><td class="n">75000</td><td class="n">395000</td></tr><tr><td>2026-09-01</td><td class="n">76000</td><td class="n">471000</td></tr><tr><td>2026-09-02</td><td class="n">25000</td><td class="n">496000</td></tr><tr><td>2026-09-03</td><td class="n">167000</td><td class="n">663000</td></tr><tr><td>2026-09-10</td><td class="n">50000</td><td class="n">713000</td></tr><tr><td>2026-09-21</td><td class="n">189000</td><td class="n">902000</td></tr><tr><td>2026-10-05</td><td class="n">358000</td><td class="n">1260000</td></tr></tbody></table></div>
+    <p>날짜로 먼저 묶었으니 같은 날짜가 두 행일 수 없어 RANGE 함정이 사라집니다.</p></div></div>
+  <div class="prac" data-id="10-5"><p class="q">금액 기준으로 <b>공동 순위를 포함해</b> 상위 3위 이내인 주문의 order_id, amount, 순위를 조회하세요.</p>
+    <div class="answer">
+<pre><code class="sql">WITH r AS (
+  SELECT order_id, amount,
+         RANK() OVER (ORDER BY amount DESC) AS rnk
+  FROM orders
+)
+SELECT order_id, amount, rnk
+FROM r
+WHERE rnk &lt;= 3
+ORDER BY rnk, order_id;</code></pre><div class="rt"><table><caption>결과 <span>(3행)</span></caption><thead><tr><th>order_id</th><th>amount</th><th>rnk</th></tr></thead><tbody><tr><td class="n">1</td><td class="n">320000</td><td class="n">1</td></tr><tr><td class="n">9</td><td class="n">320000</td><td class="n">1</td></tr><tr><td class="n">8</td><td class="n">189000</td><td class="n">3</td></tr></tbody></table></div>
+    <p>RANK는 1, 1, 3이라 3건. DENSE_RANK로 쓰면 1, 1, 2, 3이 되어 129000원(6번)까지 4건이 나옵니다. 문제가 말하는 “3위”가 어느 쪽인지 읽어 내는 게 관건이에요.</p></div></div>
+</section>
+
+<!-- ================= 11 ================= -->
+<section class="ch" id="ch11">
+  <div class="ch-head"><span class="num">11</span><h2>UNION / UNION ALL</h2></div>
+  <p class="lede">결과를 <b>위아래로</b> 이어 붙입니다. JOIN이 옆으로 붙이는 것과 대비해서 기억하세요.</p>
+
+  <div class="pair">
+<pre><code class="sql">SELECT name FROM customers WHERE city = '서울'
+UNION
+SELECT name FROM customers WHERE grade = 'VIP';</code></pre><div class="rt"><table><caption>UNION: 중복 제거 <span>(3행)</span></caption><thead><tr><th>name</th></tr></thead><tbody><tr><td>김하늘</td></tr><tr><td>박서연</td></tr><tr><td>정예린</td></tr></tbody></table></div>
+<pre><code class="sql">SELECT name FROM customers WHERE city = '서울'
+UNION ALL
+SELECT name FROM customers WHERE grade = 'VIP';</code></pre><div class="rt"><table><caption>UNION ALL: 그대로 이어 붙임 <span>(5행)</span></caption><thead><tr><th>name</th></tr></thead><tbody><tr><td>김하늘</td></tr><tr><td>박서연</td></tr><tr><td>정예린</td></tr><tr><td>김하늘</td></tr><tr><td>박서연</td></tr></tbody></table></div>
+  </div>
+  <ul class="plain">
+    <li>양쪽 SELECT의 <b>컬럼 수가 같아야</b> 하고, 결과 컬럼명은 <b>첫 번째 SELECT</b>를 따릅니다.</li>
+    <li>ORDER BY는 맨 마지막에 한 번만 쓰고 전체 결과에 적용됩니다. 각 SELECT에 따로 ORDER BY/LIMIT을 걸려면 괄호로 감싸세요.</li>
+    <li>중복 걱정이 없거나 중복을 살려야 하면 UNION ALL. 중복 제거 작업이 없어 더 빠릅니다.</li>
+  </ul>
+
+  <h3>합계 행 붙이기</h3>
+<pre><code class="sql">SELECT p.category, SUM(o.amount) AS sales
+FROM orders o JOIN products p ON o.product_id = p.product_id
+GROUP BY p.category
+UNION ALL
+SELECT '합계', SUM(amount) FROM orders;</code></pre><div class="rt"><table><caption>결과 <span>(4행)</span></caption><thead><tr><th>category</th><th>sales</th></tr></thead><tbody><tr><td>가전</td><td class="n">769000</td></tr><tr><td>뷰티</td><td class="n">302000</td></tr><tr><td>패션</td><td class="n">189000</td></tr><tr><td>합계</td><td class="n">1260000</td></tr></tbody></table></div>
+  <p>MySQL 8에선 <code class="i">GROUP BY p.category WITH ROLLUP</code>도 같은 일을 합니다. 합계 행의 category가 NULL로 나오므로 <code class="i">IF(GROUPING(p.category), '합계', p.category)</code>로 이름을 붙여요.</p>
+
+  <h3>FULL OUTER JOIN 대신</h3>
+  <p>“모든 고객과 모든 주문을, 짝이 없는 쪽도 빠짐없이” — 주문 없는 고객(최준호)과 고객 없는 주문(7번)이 둘 다 나와야 합니다.</p>
+<pre><code class="sql">SELECT c.customer_id, c.name, o.order_id
+FROM customers c LEFT JOIN orders o ON c.customer_id = o.customer_id
+UNION
+SELECT c.customer_id, c.name, o.order_id
+FROM customers c RIGHT JOIN orders o ON c.customer_id = o.customer_id
+ORDER BY order_id IS NULL, order_id;</code></pre><div class="rt"><table><caption>결과 <span>(11행)</span></caption><thead><tr><th>customer_id</th><th>name</th><th>order_id</th></tr></thead><tbody><tr><td class="n">1</td><td>김하늘</td><td class="n">1</td></tr><tr><td class="n">3</td><td>박서연</td><td class="n">2</td></tr><tr><td class="n">1</td><td>김하늘</td><td class="n">3</td></tr><tr><td class="n">1</td><td>김하늘</td><td class="n">4</td></tr><tr><td class="n">1</td><td>김하늘</td><td class="n">5</td></tr><tr><td class="n">2</td><td>이도윤</td><td class="n">6</td></tr><tr><td class="null">NULL</td><td class="null">NULL</td><td class="n">7</td></tr><tr><td class="n">3</td><td>박서연</td><td class="n">8</td></tr><tr><td class="n">5</td><td>정예린</td><td class="n">9</td></tr><tr><td class="n">2</td><td>이도윤</td><td class="n">10</td></tr><tr><td class="n">4</td><td>최준호</td><td class="null">NULL</td></tr></tbody></table></div>
+  <p>여기서 UNION ALL을 쓰면 양쪽 모두에 있는 9행이 두 번씩 나옵니다. UNION ALL을 쓰고 싶다면 두 번째 쿼리에 <code class="i">WHERE c.customer_id IS NULL</code>을 붙여 “오른쪽에만 있는 행”만 더하세요.</p>
+
+  <div class="trap"><div class="t">함정</div>
+    <p>UNION은 <b>결과 행 전체 기준</b>으로 중복을 지웁니다. 값이 같은 두 행이 원래 서로 다른 주문이었다면 하나가 사라져 개수·합계가 틀려져요. 집계할 거면 UNION ALL.</p>
+    <p>컬럼은 이름이 아니라 <b>위치</b>로 맞춰집니다. 순서를 바꿔 쓰면 엉뚱한 컬럼끼리 합쳐져요.</p>
+    <p>MySQL 8.0.31부터 INTERSECT, EXCEPT도 지원합니다. 실행 환경 버전이 낮을 수 있으니 IN / NOT EXISTS로도 쓸 줄 알아 두세요.</p>
+  </div>
+
+  <div class="prac" data-id="11-1"><p class="q">가전 상품명 목록과 가격 40,000원 미만 상품명 목록을 합치고, 어느 목록에서 왔는지 type 컬럼(‘가전’ / ‘저가’)으로 구분하세요.</p>
+    <div class="answer">
+<pre><code class="sql">SELECT '가전' AS type, product_name FROM products WHERE category = '가전'
+UNION ALL
+SELECT '저가', product_name FROM products WHERE price &lt; 40000;</code></pre><div class="rt"><table><caption>결과 <span>(4행)</span></caption><thead><tr><th>type</th><th>product_name</th></tr></thead><tbody><tr><td>가전</td><td>무선청소기</td></tr><tr><td>가전</td><td>에어프라이어</td></tr><tr><td>저가</td><td>수분크림</td></tr><tr><td>저가</td><td>선크림</td></tr></tbody></table></div></div></div>
+  <div class="prac" data-id="11-2"><p class="q">8월 또는 10월에 주문한 적이 있는 회원의 customer_id를 중복 없이 오름차순으로 조회하세요. UNION을 사용합니다.</p>
+    <div class="answer">
+<pre><code class="sql">SELECT customer_id FROM orders
+WHERE order_date BETWEEN '2026-08-01' AND '2026-08-31'
+UNION
+SELECT customer_id FROM orders
+WHERE order_date BETWEEN '2026-10-01' AND '2026-10-31'
+ORDER BY customer_id;</code></pre><div class="rt"><table><caption>결과 <span>(4행)</span></caption><thead><tr><th>customer_id</th></tr></thead><tbody><tr><td class="n">1</td></tr><tr><td class="n">2</td></tr><tr><td class="n">3</td></tr><tr><td class="n">5</td></tr></tbody></table></div>
+    <p>ORDER BY는 마지막 SELECT 뒤에 한 번. 사실 이 문제는 <code class="i">WHERE … OR …</code> + DISTINCT로도 풀리지만, 서로 다른 테이블을 합칠 때는 UNION이 필요합니다.</p></div></div>
+  <div class="prac" data-id="11-3"><p class="q">회원 등급별 주문 금액 합계를 구하고(비회원 주문은 ‘비회원’, 등급 없는 회원은 ‘일반’), 맨 아래에 ‘전체’ 합계 행을 붙이세요.</p>
+    <div class="answer">
+<pre><code class="sql">SELECT CASE WHEN o.customer_id IS NULL THEN '비회원'
+            ELSE IFNULL(c.grade, '일반') END AS grade_name,
+       SUM(o.amount) AS sales
+FROM orders o
+LEFT JOIN customers c ON o.customer_id = c.customer_id
+GROUP BY grade_name
+UNION ALL
+SELECT '전체', SUM(amount) FROM orders;</code></pre><div class="rt"><table><caption>결과 <span>(4행)</span></caption><thead><tr><th>grade_name</th><th>sales</th></tr></thead><tbody><tr><td>VIP</td><td class="n">723000</td></tr><tr><td>GOLD</td><td class="n">487000</td></tr><tr><td>비회원</td><td class="n">50000</td></tr><tr><td>전체</td><td class="n">1260000</td></tr></tbody></table></div>
+    <p>주문 기준이라 orders를 왼쪽에 두고 LEFT JOIN. 최준호(등급 없음)는 주문이 없어서 ‘일반’ 행이 생기지 않습니다.</p></div></div>
+</section>
+
+<!-- ================= 12 ================= -->
+<section class="ch" id="ch12">
+  <div class="ch-head"><span class="num">12</span><h2>실전 패턴</h2></div>
+  <p class="lede">상급 문제는 대부분 아래 틀 중 하나의 변형입니다. 뼈대를 보지 않고 손으로 쓸 수 있을 때까지 반복하세요.</p>
+
+  <h3>① 그룹별 Top N</h3>
+<pre><code class="sql">WITH ranked AS (
+  SELECT category, product_name, price,
+         ROW_NUMBER() OVER (PARTITION BY category ORDER BY price DESC) AS rn
+  FROM products
+)
+SELECT category, product_name, price, rn
+FROM ranked
+WHERE rn &lt;= 2                -- 공동 순위 포함이면 RANK / DENSE_RANK
+ORDER BY category, rn;</code></pre><div class="rt"><table><caption>결과 <span>(6행)</span></caption><thead><tr><th>category</th><th>product_name</th><th>price</th><th>rn</th></tr></thead><tbody><tr><td>가전</td><td>무선청소기</td><td class="n">320000</td><td class="n">1</td></tr><tr><td>가전</td><td>에어프라이어</td><td class="n">129000</td><td class="n">2</td></tr><tr><td>뷰티</td><td>수분크림</td><td class="n">38000</td><td class="n">1</td></tr><tr><td>뷰티</td><td>선크림</td><td class="n">25000</td><td class="n">2</td></tr><tr><td>생활</td><td>요가매트</td><td class="n">45000</td><td class="n">1</td></tr><tr><td>패션</td><td>패딩점퍼</td><td class="n">189000</td><td class="n">1</td></tr></tbody></table></div>
+
+  <h3>② 전월 대비 증감률</h3>
+<pre><code class="sql">WITH monthly AS (
+  SELECT DATE_FORMAT(order_date, '%Y-%m') AS ym, SUM(amount) AS sales
+  FROM orders
+  GROUP BY ym
+),
+with_prev AS (
+  SELECT ym, sales, LAG(sales) OVER (ORDER BY ym) AS prev_sales
+  FROM monthly
+)
+SELECT ym, sales, prev_sales,
+       sales - prev_sales                              AS diff,
+       ROUND((sales - prev_sales) / prev_sales * 100, 1) AS growth_pct
+FROM with_prev
+ORDER BY ym;</code></pre><div class="rt"><table><caption>결과 <span>(3행)</span></caption><thead><tr><th>ym</th><th>sales</th><th>prev_sales</th><th>diff</th><th>growth_pct</th></tr></thead><tbody><tr><td>2026-08</td><td class="n">395000</td><td class="null">NULL</td><td class="null">NULL</td><td class="null">NULL</td></tr><tr><td>2026-09</td><td class="n">507000</td><td class="n">395000</td><td class="n">112000</td><td class="n">28.4</td></tr><tr><td>2026-10</td><td class="n">358000</td><td class="n">507000</td><td class="n">-149000</td><td class="n">-29.4</td></tr></tbody></table></div>
+  <p>첫 달은 prev_sales가 NULL이라 증감률도 NULL. 중간에 주문 없는 달이 있으면 LAG가 그 달을 건너뛰므로, 그럴 땐 9장처럼 월 뼈대를 먼저 만듭니다.</p>
+
+  <h3>③ 누적 비중 (파레토)</h3>
+<pre><code class="sql">WITH s AS (
+  SELECT p.product_name, SUM(o.amount) AS sales
+  FROM orders o JOIN products p ON o.product_id = p.product_id
+  GROUP BY p.product_id, p.product_name
+)
+SELECT product_name, sales,
+       SUM(sales) OVER (ORDER BY sales DESC
+                        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS cum_sales,
+       ROUND(SUM(sales) OVER (ORDER BY sales DESC
+                              ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+             / SUM(sales) OVER () * 100, 1)                              AS cum_pct
+FROM s
+ORDER BY sales DESC;</code></pre><div class="rt"><table><caption>결과 <span>(5행)</span></caption><thead><tr><th>product_name</th><th>sales</th><th>cum_sales</th><th>cum_pct</th></tr></thead><tbody><tr><td>무선청소기</td><td class="n">640000</td><td class="n">640000</td><td class="n">50.8</td></tr><tr><td>패딩점퍼</td><td class="n">189000</td><td class="n">829000</td><td class="n">65.8</td></tr><tr><td>수분크림</td><td class="n">152000</td><td class="n">981000</td><td class="n">77.9</td></tr><tr><td>선크림</td><td class="n">150000</td><td class="n">1131000</td><td class="n">89.8</td></tr><tr><td>에어프라이어</td><td class="n">129000</td><td class="n">1260000</td><td class="n">100.0</td></tr></tbody></table></div>
+
+  <h3>④ 연속 N일 (갭과 섬)</h3>
+  <p>날짜에서 “그 날짜의 순번”만큼 빼면, <b>연속된 날짜들은 같은 값</b>이 됩니다. 그 값(grp)으로 묶으면 연속 구간 하나가 한 그룹이 돼요.</p>
+<pre><code class="sql">WITH d AS (SELECT DISTINCT customer_id, order_date FROM orders WHERE customer_id = 1)
+SELECT order_date,
+       ROW_NUMBER() OVER (ORDER BY order_date)                               AS rn,
+       DATE_SUB(order_date, INTERVAL ROW_NUMBER() OVER (ORDER BY order_date) DAY) AS grp
+FROM d
+ORDER BY order_date;</code></pre><div class="rt"><table><caption>원리: 김하늘의 주문일 <span>(4행)</span></caption><thead><tr><th>order_date</th><th>rn</th><th>grp</th></tr></thead><tbody><tr><td>2026-08-14</td><td class="n">1</td><td>2026-08-13</td></tr><tr><td>2026-09-01</td><td class="n">2</td><td>2026-08-30</td></tr><tr><td>2026-09-02</td><td class="n">3</td><td>2026-08-30</td></tr><tr><td>2026-09-03</td><td class="n">4</td><td>2026-08-30</td></tr></tbody></table></div>
+<pre><code class="sql">WITH d AS (                       -- 1) 고객·날짜 중복 제거 (같은 날 2건이면 하루로)
+  SELECT DISTINCT customer_id, order_date
+  FROM orders
+  WHERE customer_id IS NOT NULL
+),
+g AS (                            -- 2) 날짜 - 순번 = 그룹 키
+  SELECT customer_id, order_date,
+         DATE_SUB(order_date, INTERVAL
+           ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY order_date) DAY) AS grp
+  FROM d
+)
+SELECT customer_id,
+       MIN(order_date) AS start_date,
+       MAX(order_date) AS end_date,
+       COUNT(*)        AS streak_days
+FROM g
+GROUP BY customer_id, grp
+HAVING COUNT(*) &gt;= 3;</code></pre><div class="rt"><table><caption>3일 이상 연속 주문한 구간 <span>(1행)</span></caption><thead><tr><th>customer_id</th><th>start_date</th><th>end_date</th><th>streak_days</th></tr></thead><tbody><tr><td class="n">1</td><td>2026-09-01</td><td>2026-09-03</td><td class="n">3</td></tr></tbody></table></div>
+  <p>1단계의 DISTINCT가 핵심입니다. 같은 날 주문이 2건이면 순번은 2 증가하는데 날짜는 그대로라 그룹이 끊어져요.</p>
+
+  <h3>⑤ 재구매율 (첫 구매 후 30일 이내 재구매)</h3>
+<pre><code class="sql">WITH first_order AS (
+  SELECT customer_id, MIN(order_date) AS first_date
+  FROM orders
+  WHERE customer_id IS NOT NULL
+  GROUP BY customer_id
+)
+SELECT f.customer_id, f.first_date,
+       MIN(CASE WHEN o.order_date &gt; f.first_date THEN o.order_date END) AS next_date,
+       MAX(o.order_date &gt; f.first_date
+           AND o.order_date &lt;= f.first_date + INTERVAL 30 DAY)          AS repurchased
+FROM first_order f
+JOIN orders o ON o.customer_id = f.customer_id
+GROUP BY f.customer_id, f.first_date
+ORDER BY f.customer_id;</code></pre><div class="rt"><table><caption>중간 확인: 고객별 첫 구매일과 재구매 여부 <span>(4행)</span></caption><thead><tr><th>customer_id</th><th>first_date</th><th>next_date</th><th>repurchased</th></tr></thead><tbody><tr><td class="n">1</td><td>2026-08-14</td><td>2026-09-01</td><td class="n">1</td></tr><tr><td class="n">2</td><td>2026-09-03</td><td>2026-10-05</td><td class="n">0</td></tr><tr><td class="n">3</td><td>2026-08-20</td><td>2026-09-21</td><td class="n">0</td></tr><tr><td class="n">5</td><td>2026-10-05</td><td class="null">NULL</td><td class="n">0</td></tr></tbody></table></div>
+<pre><code class="sql">WITH first_order AS (
+  SELECT customer_id, MIN(order_date) AS first_date
+  FROM orders
+  WHERE customer_id IS NOT NULL
+  GROUP BY customer_id
+),
+flag AS (
+  SELECT f.customer_id,
+         MAX(o.order_date &gt; f.first_date
+             AND o.order_date &lt;= f.first_date + INTERVAL 30 DAY) AS repurchased
+  FROM first_order f
+  JOIN orders o ON o.customer_id = f.customer_id
+  GROUP BY f.customer_id
+)
+SELECT COUNT(*)                                 AS buyers,
+       SUM(repurchased)                         AS repurchasers,
+       ROUND(SUM(repurchased) / COUNT(*) * 100, 1) AS rate_pct
+FROM flag;</code></pre><div class="rt"><table><caption>최종 <span>(1행)</span></caption><thead><tr><th>buyers</th><th>repurchasers</th><th>rate_pct</th></tr></thead><tbody><tr><td class="n">4</td><td class="n">1</td><td class="n">25.0</td></tr></tbody></table></div>
+  <p>이도윤(9/3 → 10/5)과 박서연(8/20 → 9/21)은 32일 만이라 탈락. “30일 이내”가 첫 구매일을 0일로 볼지 1일로 볼지는 문제 정의를 따르세요. 월별 리텐션(코호트)은 first_date를 월로 바꾸고 첫 구매월로 GROUP BY 하면 됩니다.</p>
+
+  <h3>⑥ 키별 최신 1건 (중복 제거)</h3>
+<pre><code class="sql">WITH ranked AS (
+  SELECT o.*,
+         ROW_NUMBER() OVER (PARTITION BY customer_id
+                            ORDER BY order_date DESC, order_id DESC) AS rn
+  FROM orders o
+  WHERE customer_id IS NOT NULL
+)
+SELECT customer_id, order_id, order_date, amount
+FROM ranked
+WHERE rn = 1
+ORDER BY customer_id;</code></pre><div class="rt"><table><caption>결과 <span>(4행)</span></caption><thead><tr><th>customer_id</th><th>order_id</th><th>order_date</th><th>amount</th></tr></thead><tbody><tr><td class="n">1</td><td class="n">5</td><td>2026-09-03</td><td class="n">38000</td></tr><tr><td class="n">2</td><td class="n">10</td><td>2026-10-05</td><td class="n">38000</td></tr><tr><td class="n">3</td><td class="n">8</td><td>2026-09-21</td><td class="n">189000</td></tr><tr><td class="n">5</td><td class="n">9</td><td>2026-10-05</td><td class="n">320000</td></tr></tbody></table></div>
+  <p>MAX(order_date) 서브쿼리 방식은 같은 날 2건이면 둘 다 나오지만, ROW_NUMBER는 2차 정렬로 정확히 1건을 고릅니다.</p>
+
+  <h3>⑦ 중앙값 (MySQL엔 MEDIAN 함수가 없음)</h3>
+<pre><code class="sql">WITH r AS (
+  SELECT amount,
+         ROW_NUMBER() OVER (ORDER BY amount) AS rn,
+         COUNT(*)     OVER ()                AS cnt
+  FROM orders
+)
+SELECT AVG(amount) AS median_amount
+FROM r
+WHERE rn IN (FLOOR((cnt + 1) / 2), CEIL((cnt + 1) / 2));</code></pre><div class="rt"><table><caption>결과 <span>(1행)</span></caption><thead><tr><th>median_amount</th></tr></thead><tbody><tr><td class="n">75500.0000</td></tr></tbody></table></div>
+  <p>10건이면 (10+1)/2 = 5.5 → 5번째(75000)와 6번째(76000)의 평균. 홀수 개면 FLOOR와 CEIL이 같은 값이라 가운데 한 행만 남습니다. 그룹별 중앙값은 ROW_NUMBER와 COUNT에 <code class="i">PARTITION BY</code>를 붙이고 GROUP BY 하면 돼요.</p>
+
+  <h3>그 밖에 자주 나오는 것</h3>
+  <ul class="plain">
+    <li>빈 날짜·시간 채우기: 9장의 WITH RECURSIVE + LEFT JOIN. 시간대별이면 0~23 숫자 뼈대 + <code class="i">HOUR(dt)</code>.</li>
+    <li>행을 열로 펼치기(피벗): 4장의 <code class="i">SUM(CASE WHEN …)</code>.</li>
+    <li>“A와 B를 모두 산 고객”: <code class="i">GROUP BY 고객 HAVING SUM(조건A) &gt; 0 AND SUM(조건B) &gt; 0</code> (연습 12-1).</li>
+    <li>“A는 샀지만 B는 안 산 고객”: <code class="i">HAVING SUM(조건A) &gt; 0 AND SUM(조건B) = 0</code>.</li>
+  </ul>
+
+  <div class="prac" data-id="12-1"><p class="q">가전과 뷰티를 <b>둘 다</b> 구매한 고객의 이름을 조회하세요.</p>
+    <div class="answer">
+<pre><code class="sql">SELECT c.name
+FROM orders o
+JOIN products  p ON o.product_id  = p.product_id
+JOIN customers c ON o.customer_id = c.customer_id
+GROUP BY c.customer_id, c.name
+HAVING SUM(p.category = '가전') &gt; 0
+   AND SUM(p.category = '뷰티') &gt; 0
+ORDER BY c.customer_id;</code></pre><div class="rt"><table><caption>결과 <span>(2행)</span></caption><thead><tr><th>name</th></tr></thead><tbody><tr><td>김하늘</td></tr><tr><td>이도윤</td></tr></tbody></table></div>
+    <p><code class="i">WHERE category = '가전' AND category = '뷰티'</code>는 한 행이 두 값을 동시에 가질 수 없어 항상 0행입니다. “둘 다”는 행이 아니라 <b>그룹</b>에 대한 조건이라 HAVING.</p></div></div>
+  <div class="prac" data-id="12-2"><p class="q">회원별로 가장 최근 주문의 금액(last_amount)과 그 직전 주문의 금액(prev_amount)을 한 행으로 조회하세요. 주문이 1건뿐이면 prev_amount는 NULL.</p>
+    <div class="answer">
+<pre><code class="sql">WITH x AS (
+  SELECT customer_id, amount,
+         LAG(amount) OVER (PARTITION BY customer_id
+                           ORDER BY order_date, order_id)            AS prev_amount,
+         ROW_NUMBER() OVER (PARTITION BY customer_id
+                            ORDER BY order_date DESC, order_id DESC) AS rn
+  FROM orders
+  WHERE customer_id IS NOT NULL
+)
+SELECT customer_id, amount AS last_amount, prev_amount
+FROM x
+WHERE rn = 1
+ORDER BY customer_id;</code></pre><div class="rt"><table><caption>결과 <span>(4행)</span></caption><thead><tr><th>customer_id</th><th>last_amount</th><th>prev_amount</th></tr></thead><tbody><tr><td class="n">1</td><td class="n">38000</td><td class="n">25000</td></tr><tr><td class="n">2</td><td class="n">38000</td><td class="n">129000</td></tr><tr><td class="n">3</td><td class="n">189000</td><td class="n">75000</td></tr><tr><td class="n">5</td><td class="n">320000</td><td class="null">NULL</td></tr></tbody></table></div>
+    <p>LAG를 <b>먼저 계산해 둔 다음</b> 거르는 게 핵심. rn = 1로 먼저 거른 뒤 LAG를 쓰면 이전 행이 이미 사라져 전부 NULL이 됩니다.</p></div></div>
+  <div class="prac" data-id="12-3"><p class="q">상품별 매출을 큰 순으로 정렬했을 때, 누적 비중이 80%를 <b>처음 넘는 상품까지</b> 조회하세요.</p>
+    <div class="answer">
+<pre><code class="sql">WITH s AS (
+  SELECT product_id, SUM(amount) AS sales
+  FROM orders
+  GROUP BY product_id
+),
+c AS (
+  SELECT product_id, sales,
+         SUM(sales) OVER (ORDER BY sales DESC
+                          ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+           / SUM(sales) OVER () AS cum_ratio,
+         (SUM(sales) OVER (ORDER BY sales DESC
+                           ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) - sales)
+           / SUM(sales) OVER () AS before_ratio      -- 내 앞까지의 누적 비중
+  FROM s
+)
+SELECT product_id, sales, ROUND(cum_ratio * 100, 1) AS cum_pct
+FROM c
+WHERE before_ratio &lt; 0.8
+ORDER BY sales DESC;</code></pre><div class="rt"><table><caption>결과 <span>(4행)</span></caption><thead><tr><th>product_id</th><th>sales</th><th>cum_pct</th></tr></thead><tbody><tr><td class="n">101</td><td class="n">640000</td><td class="n">50.8</td></tr><tr><td class="n">105</td><td class="n">189000</td><td class="n">65.8</td></tr><tr><td class="n">103</td><td class="n">152000</td><td class="n">77.9</td></tr><tr><td class="n">104</td><td class="n">150000</td><td class="n">89.8</td></tr></tbody></table></div>
+    <p><code class="i">cum_ratio &lt;= 0.8</code>로 거르면 77.9%까지만 나오고 80%를 넘기는 상품(선크림, 89.8%)이 빠집니다. “내 앞까지의 누적이 80% 미만”으로 바꿔야 경계 행이 포함돼요. 이렇게 조건을 한 번 비트는 문제가 상급 단골입니다.</p></div></div>
+  <div class="prac" data-id="12-4"><p class="q">월별로 구매 금액 합계가 가장 큰 회원(동점이면 모두)과 그 금액을 조회하세요.</p>
+    <div class="answer">
+<pre><code class="sql">WITH m AS (
+  SELECT DATE_FORMAT(order_date, '%Y-%m') AS ym,
+         customer_id,
+         SUM(amount) AS total
+  FROM orders
+  WHERE customer_id IS NOT NULL
+  GROUP BY ym, customer_id
+),
+r AS (
+  SELECT ym, customer_id, total,
+         RANK() OVER (PARTITION BY ym ORDER BY total DESC) AS rnk
+  FROM m
+)
+SELECT r.ym, c.name, r.total
+FROM r
+JOIN customers c ON r.customer_id = c.customer_id
+WHERE r.rnk = 1
+ORDER BY r.ym;</code></pre><div class="rt"><table><caption>결과 <span>(3행)</span></caption><thead><tr><th>ym</th><th>name</th><th>total</th></tr></thead><tbody><tr><td>2026-08</td><td>김하늘</td><td class="n">320000</td></tr><tr><td>2026-09</td><td>박서연</td><td class="n">189000</td></tr><tr><td>2026-10</td><td>정예린</td><td class="n">320000</td></tr></tbody></table></div>
+    <p>집계(WITH m) → 순위(WITH r) → 필터·표시(본 쿼리). 9월엔 김하늘이 3건(139000)으로 건수는 가장 많지만 금액은 박서연(189000)이 1위입니다.</p></div></div>
+</section>
+
+<!-- ================= 치트시트 ================= -->
+<section class="ch" id="sheet">
+  <div class="ch-head"><span class="num">✓</span><h2>요약 치트시트</h2></div>
+  <p class="lede">핵심 문법과 점검 목록을 한 화면에.</p>
+  <div class="sheet">
+    <div class="cell"><h4>골격과 실행 순서</h4>
+<pre><code class="sql">SELECT DISTINCT ...   -- 5, 6
+FROM a JOIN b ON ...  -- 1
+WHERE ...             -- 2  별칭·집계 불가
+GROUP BY ...          -- 3
+HAVING ...            -- 4  집계 조건
+ORDER BY ...          -- 7  별칭 가능
+LIMIT n OFFSET m;     -- 8  LIMIT m, n</code></pre></div>
+    <div class="cell"><h4>NULL</h4>
+<pre><code class="sql">x IS NULL / IS NOT NULL    -- = NULL 금지
+IFNULL(x, 0)  COALESCE(a, b, c)
+NULLIF(x, 0)               -- 0 나누기 방지
+x &lt;=&gt; y                    -- NULL-safe 비교
+COUNT(*) vs COUNT(col)     -- NULL 포함 여부
+SUM(빈 집합) = NULL        -- IFNULL 필요
+ORDER BY x IS NULL, x      -- NULL 맨 뒤</code></pre></div>
+    <div class="cell"><h4>조건 · 조건부 집계</h4>
+<pre><code class="sql">CASE WHEN c1 THEN v1
+     WHEN c2 THEN v2 ELSE v3 END
+IF(c, a, b)
+COUNT(CASE WHEN c THEN 1 END)   -- ELSE 금지
+SUM(CASE WHEN c THEN 1 ELSE 0 END)
+SUM(c)                          -- MySQL 축약
+ORDER BY FIELD(x, 'A', 'B', 'C')</code></pre></div>
+    <div class="cell"><h4>날짜</h4>
+<pre><code class="sql">DATE_FORMAT(d, '%Y-%m-%d')   -- %c %e: 0 없음
+DATEDIFF(큰, 작은)            -- 앞 − 뒤
+TIMESTAMPDIFF(MONTH, 작은, 큰) -- 뒤 − 앞
+d + INTERVAL 1 DAY
+DATE_SUB(d, INTERVAL 1 MONTH)
+LAST_DAY(d)   DAYOFWEEK(d) 1=일
+WEEKDAY(d) 0=월   DATE(dt)</code></pre></div>
+    <div class="cell"><h4>문자 · 숫자</h4>
+<pre><code class="sql">CONCAT(a, b)   CONCAT_WS('-', a, b)
+SUBSTRING(s, 시작, 길이)   LEFT/RIGHT(s, n)
+CHAR_LENGTH(s)            -- 한글 글자 수
+SUBSTRING_INDEX(s, '@', 1)
+REPLACE(s, '-', '')   LPAD(s, 2, '0')
+ROUND(x, 1)  TRUNCATE(x, 1)  CEIL  FLOOR
+a / b → 소수   a DIV b → 몫   MOD(a, b)</code></pre></div>
+    <div class="cell"><h4>JOIN 판단</h4>
+<pre><code class="sql">-- 빠지면 안 되는 쪽을 왼쪽 + LEFT JOIN
+-- 오른쪽 테이블 조건은 ON에
+-- 개수: COUNT(오른쪽.pk)
+-- 합계: IFNULL(SUM(오른쪽.값), 0)
+-- 없는 것: WHERE 오른쪽.pk IS NULL
+-- 1:N 조인 후 개수: COUNT(DISTINCT)
+-- FULL OUTER: LEFT UNION RIGHT</code></pre></div>
+    <div class="cell"><h4>서브쿼리 · WITH</h4>
+<pre><code class="sql">WHERE x &gt; (SELECT AVG(x) FROM t)
+WHERE id IN (SELECT ...)
+WHERE NOT EXISTS (SELECT 1 ... 연결조건)
+FROM (SELECT ...) t       -- 별칭 필수
+WITH a AS (...), b AS (SELECT ... FROM a)
+WITH RECURSIVE t AS (
+  SELECT 시작 UNION ALL
+  SELECT 다음 FROM t WHERE 종료조건)</code></pre></div>
+    <div class="cell"><h4>윈도우</h4>
+<pre><code class="sql">ROW_NUMBER() OVER (PARTITION BY g ORDER BY x)
+RANK() 1,1,3   DENSE_RANK() 1,1,2
+LAG(x) / LEAD(x, 1, 0)
+SUM(x) OVER (ORDER BY d)  -- 동점 주의(RANGE)
+SUM(x) OVER ()            -- 전체 합
+ROWS BETWEEN 2 PRECEDING AND CURRENT ROW
+LAST_VALUE → 프레임을 끝까지</code></pre></div>
+    <div class="cell"><h4>패턴 뼈대</h4>
+<pre><code class="sql">-- Top N: ROW_NUMBER → 바깥 WHERE rn &lt;= N
+-- 전월 대비: 월 집계 → LAG
+-- 연속: 날짜 - ROW_NUMBER → GROUP BY
+-- 최신 1건: ROW_NUMBER(DESC) = 1
+-- 둘 다 산: HAVING SUM(A)&gt;0 AND SUM(B)&gt;0
+-- 중앙값: rn IN (FLOOR((n+1)/2), CEIL(..))
+-- 빈 날짜: RECURSIVE + LEFT JOIN</code></pre></div>
+    <div class="cell wide"><h4>쿼리 완성 후 점검 목록</h4>
+      <ul class="checklist" id="checklist">
+        <li><input type="checkbox" id="ck1"><label for="ck1">컬럼 <b>이름(별칭)·순서·개수</b>가 문제 요구와 똑같은가</label></li>
+        <li><input type="checkbox" id="ck2"><label for="ck2"><b>정렬</b> 기준·방향이 맞는가, 동점일 때 2차 정렬 기준이 있는가</label></li>
+        <li><input type="checkbox" id="ck3"><label for="ck3"><b>반올림/버림</b> 자릿수, 비율이면 ×100을 먼저 하고 ROUND 했는가</label></li>
+        <li><input type="checkbox" id="ck4"><label for="ck4"><b>NULL</b>: 부정 조건(!=, NOT IN)에서 NULL 행이 빠지지 않았나, SUM 결과 NULL을 0으로 바꿔야 하나</label></li>
+        <li><input type="checkbox" id="ck5"><label for="ck5"><b>0건 행</b>이 나와야 하는 문제인가 → LEFT JOIN + COUNT(오른쪽 컬럼)</label></li>
+        <li><input type="checkbox" id="ck6"><label for="ck6">LEFT JOIN 오른쪽 조건을 <b>WHERE에 써서</b> INNER로 만들지 않았나</label></li>
+        <li><input type="checkbox" id="ck7"><label for="ck7">조인으로 행이 불어났는데 <b>COUNT(DISTINCT)</b>가 필요하지 않은가</label></li>
+        <li><input type="checkbox" id="ck8"><label for="ck8">WHERE(행 조건) / HAVING(그룹 조건) / 바깥 쿼리(순위 조건) 위치가 맞는가</label></li>
+        <li><input type="checkbox" id="ck9"><label for="ck9"><b>날짜 경계</b>: BETWEEN 양 끝 포함, DATETIME이면 다음날 0시 미만으로</label></li>
+        <li><input type="checkbox" id="ck10"><label for="ck10">“이상/초과/이하/미만”, “공동 순위 포함” 같은 단어를 다시 읽었는가</label></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+</main>
+</div>
+
+<script>
+(function(){
+  /* ---------- 저장소: 막혀 있어도 페이지는 동작 ---------- */
+  const NS = 'mysqlstudy:v2:';
+  const store = {
+    get(k){ try{ return localStorage.getItem(NS+k); }catch(e){ return null; } },
+    set(k,v){ try{ localStorage.setItem(NS+k, v); }catch(e){} },
+    del(k){ try{ localStorage.removeItem(NS+k); }catch(e){} },
+    keys(){ try{ return Object.keys(localStorage).filter(k=>k.startsWith(NS)).map(k=>k.slice(NS.length)); }catch(e){ return []; } }
+  };
+
+  /* ---------- SQL 하이라이트 ---------- */
+  const KW = new Set(('SELECT FROM WHERE AND OR NOT IN IS NULL AS ON JOIN INNER LEFT RIGHT CROSS OUTER FULL GROUP BY HAVING ORDER ASC DESC LIMIT OFFSET DISTINCT CASE WHEN THEN ELSE END WITH RECURSIVE UNION ALL EXISTS BETWEEN LIKE OVER PARTITION ROWS RANGE UNBOUNDED PRECEDING FOLLOWING CURRENT ROW INTERVAL DAY MONTH YEAR TRUE FALSE SIGNED UNSIGNED DATE DIV WINDOW ROLLUP CREATE TABLE INSERT INTO VALUES PRIMARY KEY INT VARCHAR CHAR INTERSECT EXCEPT').split(' '));
+  const FN_LIKE = new Set(['YEAR','MONTH','DAY','DATE','IF','LEFT','RIGHT','REPLACE','CHAR']);
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  function hl(src){
+    const re = /(--[^\n]*)|('[^']*')|(`[^`]*`)|\b([A-Za-z_][A-Za-z0-9_]*)(?=\s*\()|\b([A-Za-z_][A-Za-z0-9_]*)\b|\b(\d+(?:\.\d+)?)\b/g;
+    let out = '', last = 0, m;
+    while((m = re.exec(src))){
+      out += esc(src.slice(last, m.index));
+      if(m[1]) out += '<span class="cm">'+esc(m[1])+'</span>';
+      else if(m[2] || m[3]) out += '<span class="st">'+esc(m[2]||m[3])+'</span>';
+      else if(m[4]){ const u = m[4].toUpperCase();
+        out += (KW.has(u) && !FN_LIKE.has(u)) ? '<span class="kw">'+esc(m[4])+'</span>' : '<span class="fn">'+esc(m[4])+'</span>'; }
+      else if(m[5]) out += KW.has(m[5].toUpperCase()) ? '<span class="kw">'+esc(m[5])+'</span>' : esc(m[5]);
+      else if(m[6]) out += '<span class="nu">'+esc(m[6])+'</span>';
+      last = re.lastIndex;
+    }
+    return out + esc(src.slice(last));
+  }
+  document.querySelectorAll('code.sql').forEach(c => {
+    const raw = c.textContent;
+    c.innerHTML = hl(raw);
+    const pre = c.parentElement, wrap = document.createElement('div');
+    wrap.className = 'code';
+    pre.replaceWith(wrap); wrap.appendChild(pre);
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'copy'; b.textContent = '복사';
+    b.onclick = () => {
+      const done = () => { b.textContent = '복사됨'; setTimeout(() => b.textContent = '복사', 1200); };
+      try{ navigator.clipboard.writeText(raw).then(done, () => {}); }catch(e){}
+    };
+    wrap.appendChild(b);
+  });
+
+  /* ---------- 실행 순서 스테퍼 ---------- */
+  const DATA = [{"cols": ["order_id", "customer_id", "name", "city", "order_date", "amount"], "rows": [["1", "1", "김하늘", "서울", "2026-08-14", "320000"], ["2", "3", "박서연", "서울", "2026-08-20", "75000"], ["3", "1", "김하늘", "서울", "2026-09-01", "76000"], ["4", "1", "김하늘", "서울", "2026-09-02", "25000"], ["5", "1", "김하늘", "서울", "2026-09-03", "38000"], ["6", "2", "이도윤", "부산", "2026-09-03", "129000"], ["7", null, null, null, "2026-09-10", "50000"], ["8", "3", "박서연", "서울", "2026-09-21", "189000"], ["9", "5", "정예린", "서울", "2026-10-05", "320000"], ["10", "2", "이도윤", "부산", "2026-10-05", "38000"]], "x": [6]}, {"cols": ["order_id", "customer_id", "name", "city", "order_date", "amount"], "rows": [["1", "1", "김하늘", "서울", "2026-08-14", "320000"], ["2", "3", "박서연", "서울", "2026-08-20", "75000"], ["3", "1", "김하늘", "서울", "2026-09-01", "76000"], ["4", "1", "김하늘", "서울", "2026-09-02", "25000"], ["5", "1", "김하늘", "서울", "2026-09-03", "38000"], ["6", "2", "이도윤", "부산", "2026-09-03", "129000"], ["8", "3", "박서연", "서울", "2026-09-21", "189000"], ["9", "5", "정예린", "서울", "2026-10-05", "320000"], ["10", "2", "이도윤", "부산", "2026-10-05", "38000"]], "x": [0, 1]}, {"cols": ["customer_id", "city", "묶인 order_id", "묶인 amount"], "rows": [["1", "서울", "3, 4, 5", "76000, 25000, 38000"], ["2", "부산", "6, 10", "129000, 38000"], ["3", "서울", "8", "189000"], ["5", "서울", "9", "320000"]], "x": []}, {"cols": ["customer_id", "city", "SUM(o.amount)"], "rows": [["1", "서울", "139000"], ["2", "부산", "167000"], ["3", "서울", "189000"], ["5", "서울", "320000"]], "x": [0]}, {"cols": ["city", "order_cnt"], "rows": [["부산", "2"], ["서울", "1"], ["서울", "1"]], "x": []}, {"cols": ["city", "order_cnt"], "rows": [["부산", "2"], ["서울", "1"], ["서울", "1"]], "x": [2]}, {"cols": ["city", "order_cnt"], "rows": [["서울", "1"], ["부산", "2"]], "x": []}, {"cols": ["city", "order_cnt"], "rows": [["서울", "1"], ["부산", "2"]], "x": [1]}];
+  const LINES = [
+    {ord:'5·6', segs:[['select','SELECT '],['distinct','DISTINCT '],['select','c.city, COUNT(*) AS order_cnt']]},
+    {ord:'1', segs:[['from','FROM orders o']]},
+    {ord:'1', segs:[['from','JOIN customers c ON o.customer_id = c.customer_id']]},
+    {ord:'2', segs:[['where',"WHERE o.order_date >= '2026-09-01'"]]},
+    {ord:'3', segs:[['group','GROUP BY c.customer_id, c.city']]},
+    {ord:'4', segs:[['having','HAVING SUM(o.amount) >= 150000']]},
+    {ord:'7', segs:[['order','ORDER BY order_cnt']]},
+    {ord:'8', segs:[['limit','LIMIT 1;']]}
+  ];
+  const STEPS = [
+    {k:'from', name:'FROM·JOIN', title:'1. FROM + JOIN', desc:'orders 10행에 customers를 붙입니다. INNER JOIN이라 고객과 짝이 없는 비회원 주문(7번, customer_id NULL)이 여기서 떨어져 나가요. → 9행'},
+    {k:'where', name:'WHERE', title:'2. WHERE', desc:'행을 하나씩 보며 조건에 맞지 않는 행을 버립니다. 8월 주문 2건(1·2번)이 빠집니다. 이 시점엔 SELECT 별칭(order_cnt)이 아직 없고 그룹도 없어서, 여기에 별칭이나 SUM()을 쓰면 에러예요. → 7행'},
+    {k:'group', name:'GROUP BY', title:'3. GROUP BY', desc:'남은 7행을 고객 단위로 묶습니다. 이제부터 결과 한 행 = 고객 1명. 묶인 원본 값들은 집계함수(COUNT, SUM …)로만 꺼낼 수 있습니다. → 4그룹'},
+    {k:'having', name:'HAVING', title:'4. HAVING', desc:'그룹마다 합계를 계산해 조건에 맞지 않는 그룹을 버립니다. 1번 고객(김하늘)은 9월 이후 합계가 139000이라 탈락. → 3그룹'},
+    {k:'select', name:'SELECT', title:'5. SELECT', desc:'이제야 보여줄 컬럼을 계산하고 별칭 order_cnt가 생깁니다. 윈도우 함수도 이 단계에서 계산돼요. → 3행'},
+    {k:'distinct', name:'DISTINCT', title:'6. DISTINCT', desc:'SELECT 결과에서 모든 컬럼 값이 똑같은 행을 하나만 남깁니다. (서울, 1)이 두 번 나와서 하나가 지워집니다. → 2행'},
+    {k:'order', name:'ORDER BY', title:'7. ORDER BY', desc:'SELECT 다음 단계라 별칭 order_cnt로 정렬할 수 있습니다. 오름차순이라 1건짜리가 위로 올라옵니다.'},
+    {k:'limit', name:'LIMIT', title:'8. LIMIT', desc:'정렬된 결과에서 앞의 1행만 남깁니다. 이것이 최종 결과예요.'}
+  ];
+  const ORDER = STEPS.map(s => s.k);
+  const sq = document.getElementById('sq'), chips = document.getElementById('sChips');
+  sq.innerHTML = LINES.map(l => '<div class="ln"><span class="ord">'+l.ord+'</span><span>'+
+    l.segs.map(s => '<span class="seg" data-k="'+s[0]+'">'+hl(s[1])+'</span>').join('')+'</span></div>').join('');
+  chips.innerHTML = STEPS.map((s,i) => '<li><button type="button" data-i="'+i+'">'+(i+1)+' '+s.name+'</button></li>').join('');
+  function table(cols, rows, struck, cap){
+    let h = '<table><caption>'+esc(cap)+'</caption><thead><tr>' + cols.map(c => '<th>'+esc(c)+'</th>').join('') + '</tr></thead><tbody>';
+    rows.forEach((r,i) => {
+      h += '<tr'+(struck.includes(i) ? ' class="x"' : '')+'>' + r.map(v => v === null ? '<td class="null">NULL</td>'
+        : '<td'+(/^-?\d+(\.\d+)?$/.test(v) ? ' class="n"' : '')+'>'+esc(String(v))+'</td>').join('') + '</tr>';
+    });
+    return h + '</tbody></table>';
+  }
+  let cur = 0;
+  function render(){
+    const s = STEPS[cur], d = DATA[cur];
+    sq.querySelectorAll('.ln').forEach(ln => {
+      const ks = [...ln.querySelectorAll('.seg')].map(x => ORDER.indexOf(x.dataset.k));
+      ln.className = 'ln ' + (ks.includes(cur) ? 'on' : Math.max(...ks) < cur ? 'done' : 'later');
+      ln.querySelectorAll('.seg').forEach(x => x.classList.toggle('mark', ln.querySelectorAll('.seg').length > 1 && x.dataset.k === s.k));
+    });
+    chips.querySelectorAll('button').forEach((b,i) => { b.className = i === cur ? 'on' : i < cur ? 'done' : ''; });
+    document.getElementById('sTitle').textContent = s.title;
+    document.getElementById('sDesc').textContent = s.desc;
+    const alive = d.rows.length - d.x.length;
+    document.getElementById('sTable').innerHTML = table(d.cols, d.rows, d.x, '이 단계가 끝난 뒤' + (d.x.length ? ' (취소선 '+d.x.length+'행 제거 → '+alive+'행)' : ' ('+alive+'행)'));
+    document.getElementById('sPrev').disabled = cur === 0;
+    document.getElementById('sNext').textContent = cur === STEPS.length-1 ? '처음으로' : '다음 단계';
+    document.getElementById('sPos').textContent = (cur+1)+' / '+STEPS.length;
+  }
+  document.getElementById('sPrev').onclick = () => { if(cur > 0){ cur--; render(); } };
+  document.getElementById('sNext').onclick = () => { cur = cur === STEPS.length-1 ? 0 : cur+1; render(); };
+  chips.addEventListener('click', e => { const b = e.target.closest('button'); if(b){ cur = +b.dataset.i; render(); } });
+  document.getElementById('stepper').addEventListener('keydown', e => {
+    if(e.target.tagName === 'TEXTAREA') return;
+    if(e.key === 'ArrowRight' && cur < STEPS.length-1){ cur++; render(); }
+    if(e.key === 'ArrowLeft' && cur > 0){ cur--; render(); }
+  });
+  render();
+
+  /* ---------- 연습문제 ---------- */
+  const pracs = [...document.querySelectorAll('.prac')];
+  const byCh = {};
+  pracs.forEach(p => {
+    const id = p.dataset.id, ch = id.split('-')[0];
+    (byCh[ch] = byCh[ch] || []).push(p);
+    const q = p.querySelector('.q');
+    q.insertAdjacentHTML('afterbegin', '<span class="no">'+id+'</span>');
+    q.innerHTML = q.innerHTML.replace(/^(<span class="no">[^<]*<\/span>)([\s\S]*)$/, '$1<span>$2</span>');
+    const ans = p.querySelector('.answer');
+    ans.insertAdjacentHTML('afterbegin', '<div class="lbl">정답 예시</div>');
+    const ta = document.createElement('textarea');
+    ta.spellcheck = false; ta.placeholder = '여기에 직접 써 보세요. 쓴 내용은 이 브라우저에 자동 저장됩니다.';
+    ta.setAttribute('aria-label', id + ' 답안');
+    ta.value = store.get('ans:'+id) || '';
+    const bar = document.createElement('div'); bar.className = 'prac-actions';
+    bar.innerHTML = '<button type="button" class="btn reveal">정답 보기</button><label><input type="checkbox" class="done"> 풀었음</label><span class="saved"></span>';
+    q.after(ta); ta.after(bar);
+    const saved = bar.querySelector('.saved');
+    let t;
+    ta.addEventListener('input', () => {
+      clearTimeout(t);
+      t = setTimeout(() => { if(ta.value) store.set('ans:'+id, ta.value); else store.del('ans:'+id); saved.textContent = '저장됨'; }, 400);
+    });
+    ta.addEventListener('keydown', e => {
+      if(e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.metaKey){
+        e.preventDefault(); ta.setRangeText('  ', ta.selectionStart, ta.selectionEnd, 'end'); ta.dispatchEvent(new Event('input'));
+      }
+    });
+    const btn = bar.querySelector('.reveal'), cb = bar.querySelector('.done');
+    btn.onclick = () => { const open = p.classList.toggle('open'); btn.textContent = open ? '정답 숨기기' : '정답 보기'; };
+    cb.checked = store.get('done:'+id) === '1';
+    p.classList.toggle('isdone', cb.checked);
+    cb.onchange = () => { if(cb.checked) store.set('done:'+id, '1'); else store.del('done:'+id); p.classList.toggle('isdone', cb.checked); updateProgress(); };
+  });
+  // 장마다 "연습문제" 제목 붙이기
+  Object.keys(byCh).forEach(ch => {
+    const first = byCh[ch][0];
+    first.insertAdjacentHTML('beforebegin', '<div class="prac-head"><h3>연습문제</h3><span class="cnt" data-ch="'+ch+'"></span></div>');
+  });
+  const links = [...document.querySelectorAll('#tocList a')];
+  links.forEach(a => {
+    const ch = a.getAttribute('href').replace('#ch','');
+    if(byCh[ch]) a.insertAdjacentHTML('beforeend', '<span class="c" data-ch="'+ch+'"></span>');
+  });
+  function updateProgress(){
+    const done = pracs.filter(p => p.querySelector('.done').checked).length, total = pracs.length;
+    document.getElementById('doneCount').textContent = done;
+    document.getElementById('totalCount').textContent = total;
+    document.getElementById('doneBar').style.width = (done/total*100)+'%';
+    document.getElementById('miniCount').textContent = done+'/'+total;
+    document.getElementById('miniBar').style.width = (done/total*100)+'%';
+    Object.keys(byCh).forEach(ch => {
+      const n = byCh[ch].length, d = byCh[ch].filter(p => p.querySelector('.done').checked).length;
+      document.querySelectorAll('[data-ch="'+ch+'"]').forEach(el => {
+        el.textContent = d+'/'+n; el.classList.toggle('full', d === n);
+      });
+    });
+  }
+  updateProgress();
+
+  /* ---------- 점검 목록 저장 ---------- */
+  document.querySelectorAll('#checklist input').forEach(cb => {
+    cb.checked = store.get('ck:'+cb.id) === '1';
+    cb.onchange = () => cb.checked ? store.set('ck:'+cb.id, '1') : store.del('ck:'+cb.id);
+  });
+
+  /* ---------- 기록 초기화 ---------- */
+  document.getElementById('resetBtn').onclick = () => {
+    if(!confirm('입력한 답안, 풀었음 체크, 점검 목록을 모두 지울까요?')) return;
+    store.keys().filter(k => k !== 'theme').forEach(k => store.del(k));
+    location.reload();
+  };
+
+  /* ---------- 목차: 현재 위치 ---------- */
+  const sections = [...document.querySelectorAll('section.ch')];
+  const where = document.getElementById('whereNow');
+  let ticking = false;
+  function syncToc(){
+    ticking = false;
+    const y = window.innerHeight * 0.3;
+    let curSec = sections[0];
+    for(const s of sections){ if(s.getBoundingClientRect().top <= y) curSec = s; else break; }
+    if((window.innerHeight + window.scrollY) >= document.documentElement.scrollHeight - 4) curSec = sections[sections.length-1];
+    links.forEach(a => {
+      const on = a.getAttribute('href') === '#'+curSec.id;
+      a.classList.toggle('active', on);
+      if(on){ a.setAttribute('aria-current', 'true'); where.textContent = a.childNodes[1].textContent; } else a.removeAttribute('aria-current');
+    });
+  }
+  window.addEventListener('scroll', () => { if(!ticking){ ticking = true; requestAnimationFrame(syncToc); } }, {passive:true});
+  syncToc();
+
+  /* ---------- 모바일 목차 서랍 ---------- */
+  const body = document.body;
+  document.getElementById('menuBtn').onclick = () => body.classList.toggle('nav-open');
+  document.getElementById('scrim').onclick = () => body.classList.remove('nav-open');
+  links.forEach(a => a.addEventListener('click', () => body.classList.remove('nav-open')));
+  document.addEventListener('keydown', e => { if(e.key === 'Escape') body.classList.remove('nav-open'); });
+
+  /* ---------- 테마 ---------- */
+  const root = document.documentElement, themeBtn = document.getElementById('themeBtn');
+  const isDark = () => root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  const savedTheme = store.get('theme'); if(savedTheme) root.dataset.theme = savedTheme;
+  const syncTheme = () => { themeBtn.textContent = isDark() ? '라이트 모드' : '다크 모드'; };
+  themeBtn.onclick = () => { root.dataset.theme = isDark() ? 'light' : 'dark'; store.set('theme', root.dataset.theme); syncTheme(); };
+  try{ matchMedia('(prefers-color-scheme: dark)').addEventListener('change', syncTheme); }catch(e){}
+  syncTheme();
+})();
+</script>
+</body>
+</html>
