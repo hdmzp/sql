@@ -251,6 +251,7 @@ details.setup pre{max-height:360px}
     <li><a href="#ch10"><span class="n">10</span>윈도우 함수</a></li>
     <li><a href="#ch11"><span class="n">11</span>UNION</a></li>
     <li><a href="#ch12"><span class="n">12</span>실전 패턴</a></li>
+    <li><a href="#ch13"><span class="n">13</span>GROUP BY·윈도우·서브쿼리</a></li>
     <li><a href="#sheet"><span class="n">✓</span>요약 치트시트</a></li>
   </ol>
   <div class="progress">
@@ -1798,6 +1799,214 @@ JOIN customers c ON r.customer_id = c.customer_id
 WHERE r.rnk = 1
 ORDER BY r.ym;</code></pre>
     <p>집계(WITH m) → 순위(WITH r) → 필터·표시(본 쿼리). 9월엔 김하늘이 3건(139000)으로 건수는 가장 많지만 금액은 박서연(189000)이 1위입니다.</p></div></div>
+</section>
+
+<!-- ================= 13 ================= -->
+<section class="ch" id="ch13">
+  <div class="ch-head"><span class="num">13</span><h2>GROUP BY · 윈도우 · 서브쿼리 한 번에 정리</h2></div>
+  <p class="lede">셋 다 “그룹별로 뭔가 계산”할 때 쓰여서 헷갈립니다. 차이는 <b>결과 행이 몇 개 남느냐</b>, 그리고 <b>언제 실행되느냐</b>에서 나와요.</p>
+
+  <h3>한 줄 차이</h3>
+  <ul class="plain">
+    <li><b>GROUP BY</b>: 행을 <b>접는다</b>. 그룹 하나당 1행만 남고, 원본 행의 개별 값(주문일, 금액 하나하나)은 사라집니다.</li>
+    <li><b>윈도우 함수</b>(<code class="i">OVER</code>): 행을 <b>그대로 둔다</b>. 각 행 옆에 “내가 속한 그룹의 합계/순위/이전 값”을 붙입니다.</li>
+    <li><b>서브쿼리</b>: 쿼리 결과를 <b>값·목록·테이블</b>로 만들어 다른 쿼리 안에 끼워 넣습니다. 계산 방법이 아니라 “쿼리를 조립하는 방법”이에요.</li>
+  </ul>
+  <p>같은 질문 “회원별 주문 합계”를 두 방식으로 써 보면 차이가 바로 보입니다.</p>
+  <div class="pair">
+<pre><code class="sql" data-run data-cap="GROUP BY: 9행 → 4행으로 접힘">SELECT customer_id,
+       SUM(amount) AS total
+FROM orders
+WHERE customer_id IS NOT NULL
+GROUP BY customer_id
+ORDER BY customer_id;</code></pre>
+<pre><code class="sql" data-run data-cap="윈도우: 9행 그대로, 옆에 합계">SELECT customer_id, order_id, amount,
+       SUM(amount) OVER (PARTITION BY customer_id) AS total
+FROM orders
+WHERE customer_id IS NOT NULL
+ORDER BY customer_id, order_id;</code></pre>
+  </div>
+  <p><b>PARTITION BY는 “행을 접지 않는 GROUP BY”</b>라고 생각하면 됩니다. 그룹을 나누는 기준이라는 점은 같지만, 결과 행 수는 그대로예요.</p>
+  <div class="tip"><div class="t">고르는 기준</div>
+    <ul class="plain">
+      <li>결과가 <b>그룹당 1행</b>이어야 한다 (“고객별 합계”, “월별 건수”) → <b>GROUP BY</b></li>
+      <li>원본 행을 <b>그대로 보여주면서</b> 그룹 정보를 붙여야 한다 (“각 주문 옆에 고객 총액”, “주문별 비중”, “고객 안에서 순번”) → <b>윈도우</b></li>
+      <li>계산한 결과로 <b>다시 거르거나 비교</b>해야 한다 (“평균보다 큰”, “순위 1위만”, “주문한 적 없는”) → <b>서브쿼리 / WITH</b>로 한 번 감싸기</li>
+    </ul>
+  </div>
+
+  <h3>윈도우 함수를 쓰려고 GROUP BY를 넣지 않는다</h3>
+  <p>가장 흔한 실수입니다. <code class="i">PARTITION BY customer_id</code>를 보고 “customer_id로 묶어야 하니까” GROUP BY에도 넣으면, 행이 먼저 접혀 버려서 개별 amount를 더 이상 꺼낼 수 없게 됩니다.</p>
+<pre><code class="sql" data-run="err">SELECT customer_id, amount,
+       SUM(amount) OVER (PARTITION BY customer_id) AS total
+FROM orders
+GROUP BY customer_id;          -- 필요 없는 GROUP BY</code></pre>
+  <p>에러 내용: “amount가 GROUP BY에 없다”. 고객 1명이 1행으로 접혔는데 amount는 4개라 어느 걸 보여줄지 모르는 거예요. <b>GROUP BY를 지우면</b> 위의 “윈도우” 예시처럼 정상 동작합니다. 윈도우 함수는 PARTITION BY만으로 그룹을 나누므로 GROUP BY가 필요 없어요.</p>
+
+  <h3>GROUP BY와 윈도우를 같이 쓰는 경우</h3>
+  <p>둘을 함께 쓰는 것 자체는 문제없습니다. 실행 순서만 기억하면 돼요: <b>GROUP BY(3단계) → SELECT의 윈도우 함수(5단계)</b>. 즉 윈도우 함수는 <b>이미 접힌 결과</b>(그룹당 1행) 위에서 계산됩니다.</p>
+<pre><code class="sql" data-run data-cap="회원별 합계를 먼저 구하고, 그 합계로 순위">SELECT customer_id,
+       SUM(amount)                         AS total,
+       RANK() OVER (ORDER BY SUM(amount) DESC) AS rnk
+FROM orders
+WHERE customer_id IS NOT NULL
+GROUP BY customer_id
+ORDER BY rnk;</code></pre>
+  <p>OVER 안에 <code class="i">SUM(amount)</code>가 들어간 게 핵심입니다. 윈도우가 보는 건 접힌 4행이라, 거기에 있는 값은 <b>GROUP BY 컬럼 아니면 집계 결과</b>뿐이에요. 그래서 이런 규칙이 나옵니다.</p>
+  <ol class="plain">
+    <li>윈도우 함수의 인자, PARTITION BY, ORDER BY에는 <b>GROUP BY 컬럼이나 집계함수</b>만 쓸 수 있다.</li>
+    <li>윈도우 함수(또는 그 별칭)를 <b>GROUP BY에 넣지 않는다</b>. 윈도우는 GROUP BY보다 나중에 계산되니까.</li>
+    <li>GROUP BY 뒤의 <code class="i">COUNT(*) OVER ()</code>는 원본 행 수가 아니라 <b>그룹 수</b>를 센다.</li>
+  </ol>
+<pre><code class="sql" data-run="err">SELECT DATE_FORMAT(order_date, '%Y-%m') AS ym,
+       SUM(SUM(amount)) OVER (PARTITION BY customer_id) AS x   -- customer_id는 이미 접혀서 없음
+FROM orders
+GROUP BY ym;</code></pre>
+<pre><code class="sql" data-run="err">SELECT customer_id,
+       ROW_NUMBER() OVER (ORDER BY customer_id) AS rn
+FROM orders
+GROUP BY rn;                   -- 윈도우 결과로는 묶을 수 없음</code></pre>
+<pre><code class="sql" data-run data-cap="COUNT(*) OVER ()가 10이 아니라 5">SELECT customer_id,
+       COUNT(*)          AS orders_in_group,   -- 그룹 안의 원본 행 수
+       COUNT(*) OVER ()  AS group_count        -- 접힌 결과의 행 수 = 그룹 수
+FROM orders
+GROUP BY customer_id
+ORDER BY customer_id;</code></pre>
+  <p>전체 주문 대비 비중처럼 “원본 전체 합계”가 필요하면 <code class="i">SUM(SUM(amount)) OVER ()</code>(10장)처럼 집계를 한 번 더 감싸서 씁니다.</p>
+
+  <h3>같은 결과, 세 가지 방법</h3>
+  <p>“각 주문 옆에 그 고객의 총액과, 총액 중 이 주문의 비중(%)” — 윈도우, 상관 서브쿼리, 집계 후 JOIN이 모두 같은 결과를 냅니다. 서로 바꿔 쓸 줄 알면 개념이 확실히 잡혀요.</p>
+<pre><code class="sql" data-run data-cap="① 윈도우 함수 (가장 짧음)">SELECT order_id, customer_id, amount,
+       SUM(amount) OVER (PARTITION BY customer_id) AS total,
+       ROUND(amount / SUM(amount) OVER (PARTITION BY customer_id) * 100, 1) AS pct
+FROM orders
+WHERE customer_id IN (1, 2)
+ORDER BY order_id;</code></pre>
+<pre><code class="sql" data-run data-cap="② SELECT절 상관 서브쿼리 (주문 행마다 그 고객 합계를 다시 계산)">SELECT o.order_id, o.customer_id, o.amount,
+       (SELECT SUM(o2.amount) FROM orders o2
+         WHERE o2.customer_id = o.customer_id) AS total,
+       ROUND(o.amount / (SELECT SUM(o2.amount) FROM orders o2
+                          WHERE o2.customer_id = o.customer_id) * 100, 1) AS pct
+FROM orders o
+WHERE o.customer_id IN (1, 2)
+ORDER BY o.order_id;</code></pre>
+<pre><code class="sql" data-run data-cap="③ 고객별로 먼저 접은 뒤(FROM 서브쿼리) 원본에 JOIN">SELECT o.order_id, o.customer_id, o.amount,
+       t.total,
+       ROUND(o.amount / t.total * 100, 1) AS pct
+FROM orders o
+JOIN (SELECT customer_id, SUM(amount) AS total
+      FROM orders
+      GROUP BY customer_id) t
+  ON o.customer_id = t.customer_id
+WHERE o.customer_id IN (1, 2)
+ORDER BY o.order_id;</code></pre>
+  <p>③이 GROUP BY와 원본 행을 함께 쓰는 “정석”입니다. 접은 결과(t)와 접지 않은 원본(o)을 <b>따로 만들어 붙이는</b> 거예요. 윈도우 함수 ①은 이걸 한 줄로 줄여 주는 문법이라고 보면 됩니다.</p>
+
+  <h3>서브쿼리: 위치와 모양으로 정리</h3>
+  <p>서브쿼리는 <b>어디에 놓이느냐</b>에 따라 돌려줘야 하는 결과의 <b>모양</b>이 정해집니다. 모양이 안 맞으면 에러예요.</p>
+  <div class="rt"><table>
+    <thead><tr><th>위치</th><th>돌려줘야 하는 모양</th><th>예</th></tr></thead>
+    <tbody>
+      <tr><td>SELECT절</td><td>값 1개 (1행 1열)</td><td>(SELECT AVG(price) FROM products)</td></tr>
+      <tr><td>WHERE / HAVING의 = &gt; &lt;</td><td>값 1개 (1행 1열)</td><td>WHERE price &gt; (SELECT AVG(price) …)</td></tr>
+      <tr><td>WHERE … IN</td><td>한 열, 여러 행</td><td>WHERE id IN (SELECT customer_id …)</td></tr>
+      <tr><td>WHERE EXISTS</td><td>상관없음 (행이 있냐만 봄)</td><td>WHERE EXISTS (SELECT 1 … 연결조건)</td></tr>
+      <tr><td>FROM / JOIN</td><td>테이블 (여러 행·열), 별칭 필수</td><td>FROM (SELECT … GROUP BY …) t</td></tr>
+    </tbody>
+  </table></div>
+
+  <h4>비상관 vs 상관</h4>
+  <ul class="plain">
+    <li><b>비상관</b>: 안쪽 쿼리가 바깥을 참조하지 않음. <b>안쪽만 복사해서 실행해도 돌아갑니다.</b> 한 번 계산한 값을 바깥에서 씀. 예: <code class="i">(SELECT AVG(price) FROM products)</code></li>
+    <li><b>상관</b>: 안쪽에서 바깥 테이블의 컬럼(<code class="i">o.customer_id</code>)을 참조. 안쪽만 떼면 에러. 바깥 <b>행마다</b> 다시 계산된다고 생각하세요. 예: 위 ②, 8장의 “고객별 최고 금액 주문”.</li>
+  </ul>
+  <p>헷갈릴 때는 <b>안쪽부터</b> 읽습니다. 안쪽 결과를 머릿속으로 표(또는 값 하나)로 바꿔 놓고 바깥 쿼리를 읽으면 돼요. 상관 서브쿼리는 “바깥 행 하나를 고정해 놓고 안쪽을 계산”을 행마다 반복한다고 따라가면 됩니다.</p>
+
+  <h4>HAVING에서 서브쿼리: 집계 결과를 집계 결과와 비교</h4>
+<pre><code class="sql" data-run data-cap="회원 1인당 평균 구매액(302500)보다 많이 산 회원">SELECT customer_id, SUM(amount) AS total
+FROM orders
+WHERE customer_id IS NOT NULL
+GROUP BY customer_id
+HAVING SUM(amount) > (
+  SELECT AVG(total)                  -- 2) 그 합계들의 평균 = 값 1개
+  FROM (SELECT SUM(amount) AS total  -- 1) 고객별 합계 표
+        FROM orders
+        WHERE customer_id IS NOT NULL
+        GROUP BY customer_id) t
+)
+ORDER BY total DESC;</code></pre>
+  <p><code class="i">AVG(SUM(amount))</code>처럼 집계함수를 겹쳐 쓰는 건 일반 SELECT에선 불가능합니다(윈도우 OVER 안에서만 가능). 그래서 “합계를 구한 표”를 FROM 서브쿼리로 먼저 만들고, 그 위에서 AVG를 구했어요. 이게 길어지면 9장의 WITH로 단계를 나누면 됩니다.</p>
+
+  <div class="trap"><div class="t">정리: 이 셋을 섞을 때 기억할 것</div>
+    <ul class="plain">
+      <li>윈도우 함수만 쓸 땐 <b>GROUP BY를 쓰지 않는다</b>. 그룹 나누기는 PARTITION BY가 한다.</li>
+      <li>GROUP BY와 윈도우를 같이 쓰면 윈도우는 <b>접힌 결과</b> 위에서 돈다. OVER 안에는 GROUP BY 컬럼이나 <code class="i">SUM(…)</code> 같은 집계만.</li>
+      <li>윈도우 결과로 <b>거르려면</b>(rn = 1, rnk &lt;= 3) 반드시 서브쿼리/WITH로 감싸서 바깥 WHERE에서.</li>
+      <li>집계 결과끼리 비교하거나 집계를 한 번 더 집계하려면 FROM 서브쿼리/WITH로 단계를 나눈다.</li>
+      <li>서브쿼리 모양: <code class="i">=</code>는 값 1개, IN은 한 열, FROM은 별칭 붙은 표.</li>
+    </ul>
+  </div>
+
+  <div class="prac" data-id="13-1"><p class="q">회원 주문 각각에 대해 order_id, customer_id, amount와, <b>그 고객의 전체 주문 건수</b>(cnt)를 함께 조회하세요. 주문 행은 줄어들면 안 됩니다.</p>
+    <div class="answer">
+<pre><code class="sql" data-run>SELECT order_id, customer_id, amount,
+       COUNT(*) OVER (PARTITION BY customer_id) AS cnt
+FROM orders
+WHERE customer_id IS NOT NULL
+ORDER BY customer_id, order_id;</code></pre>
+    <p>“행이 줄면 안 된다” = 윈도우. GROUP BY customer_id를 쓰면 고객당 1행으로 접혀서 order_id, amount를 보여줄 수 없어요. ③ 방식(고객별 COUNT를 FROM 서브쿼리로 만들고 JOIN)도 정답입니다.</p></div></div>
+  <div class="prac" data-id="13-2"><p class="q">카테고리별 매출 합계와, 매출이 큰 순서의 순위(sales_rank)를 <b>한 쿼리에서</b> 구하세요. 동점이면 같은 순위.</p>
+    <div class="answer">
+<pre><code class="sql" data-run>SELECT p.category,
+       SUM(o.amount)                             AS sales,
+       RANK() OVER (ORDER BY SUM(o.amount) DESC) AS sales_rank
+FROM orders o
+JOIN products p ON o.product_id = p.product_id
+GROUP BY p.category
+ORDER BY sales_rank;</code></pre>
+    <p>GROUP BY로 먼저 접고, 접힌 결과 위에서 RANK. OVER 안에는 별칭(sales)이 아니라 <code class="i">SUM(o.amount)</code>를 그대로 씁니다. 같은 SELECT 안에서 만든 별칭은 같은 SELECT의 다른 식에서 쓸 수 없기 때문이에요.</p></div></div>
+  <div class="prac" data-id="13-3"><p class="q"><b>그 고객의 평균 주문 금액보다</b> 큰 주문의 order_id, customer_id, amount를 조회하세요. 윈도우 함수와 상관 서브쿼리 두 가지로 써 보세요.</p>
+    <div class="answer">
+<pre><code class="sql" data-run data-cap="윈도우: 감싼 뒤 바깥에서 거르기">SELECT order_id, customer_id, amount
+FROM (
+  SELECT order_id, customer_id, amount,
+         AVG(amount) OVER (PARTITION BY customer_id) AS cust_avg
+  FROM orders
+  WHERE customer_id IS NOT NULL
+) t
+WHERE amount > cust_avg
+ORDER BY order_id;</code></pre>
+<pre><code class="sql" data-run data-cap="상관 서브쿼리: 행마다 그 고객 평균과 비교">SELECT o.order_id, o.customer_id, o.amount
+FROM orders o
+WHERE o.amount > (
+  SELECT AVG(o2.amount)
+  FROM orders o2
+  WHERE o2.customer_id = o.customer_id
+)
+ORDER BY o.order_id;</code></pre>
+    <p>윈도우 버전에서 <code class="i">WHERE amount &gt; AVG(amount) OVER (…)</code>로 바로 쓰면 에러(윈도우는 WHERE 불가). 정예린은 주문이 1건이라 자기 자신이 평균이어서 “보다 큰”에 해당하지 않습니다.</p></div></div>
+  <div class="prac" data-id="13-4"><p class="q">카테고리별 매출을 구하고, 매출이 <b>카테고리 평균 매출보다 큰</b> 카테고리만 조회하세요.</p>
+    <div class="answer">
+<pre><code class="sql" data-run data-cap="WITH로 단계 나누기">WITH cat AS (
+  SELECT p.category, SUM(o.amount) AS sales
+  FROM orders o
+  JOIN products p ON o.product_id = p.product_id
+  GROUP BY p.category
+)
+SELECT category, sales
+FROM cat
+WHERE sales > (SELECT AVG(sales) FROM cat);</code></pre>
+<pre><code class="sql" data-run data-cap="윈도우로: 접힌 결과의 평균을 옆에 붙인 뒤 감싸서 거르기">SELECT category, sales, avg_sales
+FROM (
+  SELECT p.category,
+         SUM(o.amount)              AS sales,
+         AVG(SUM(o.amount)) OVER () AS avg_sales
+  FROM orders o
+  JOIN products p ON o.product_id = p.product_id
+  GROUP BY p.category
+) t
+WHERE sales > avg_sales;</code></pre>
+    <p>카테고리 평균 매출은 (769000 + 302000 + 189000) / 3 = 420000. 팔린 적 없는 생활 카테고리는 INNER JOIN에서 빠져 평균 계산에도 들어가지 않습니다. 0으로 포함해야 한다면 products 기준 LEFT JOIN + IFNULL.</p></div></div>
 </section>
 
 <!-- ================= 치트시트 ================= -->
